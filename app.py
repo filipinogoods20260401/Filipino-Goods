@@ -7,14 +7,13 @@ import streamlit as st
 # --- OLDAL BEÁLLÍTÁSA ---
 st.set_page_config(
     page_title="Filipino Goods - Online Shop",
-    page_icon="logo.png" if os.path.exists("logo.png") else "🇵🇭",
+    page_icon="🇵🇭",
     layout="wide"
 )
 
 EXCEL_FILE = 'Inventory management spreadsheet base.xlsx'
 INVOICES_DIR = 'invoices'
 IMAGES_DIR = 'images'
-LOGO_FILE = 'logo.png'
 BANNER_FILE = 'hero_banner.png'
 NO_IMAGE_URL = 'https://via.placeholder.com/300x200?text=No+Image'
 
@@ -201,34 +200,42 @@ if "current_page_idx" not in st.session_state:
     st.session_state.current_page_idx = 0
 if "admin_logged_in" not in st.session_state:
     st.session_state.admin_logged_in = False
+if "lang" not in st.session_state:
+    st.session_state.lang = "SK"
 
 df_products = load_products()
 
 # ==========================================
-# 1. LEGÜLÜL: HERO BANNER
+# 1. NYELVVÁLASZTÓ GOMBOK (LEGÜLÜL, BANNER ELŐTT)
+# ==========================================
+lang_col1, lang_col2, lang_col3, _ = st.columns([1, 1, 1, 5])
+
+with lang_col1:
+    if st.button("🇸🇰 SK", type="primary" if st.session_state.lang == "SK" else "secondary", use_container_width=True):
+        st.session_state.lang = "SK"
+        st.rerun()
+
+with lang_col2:
+    if st.button("🇬🇧 EN", type="primary" if st.session_state.lang == "EN" else "secondary", use_container_width=True):
+        st.session_state.lang = "EN"
+        st.rerun()
+
+with lang_col3:
+    if st.button("🇭🇺 HU", type="primary" if st.session_state.lang == "HU" else "secondary", use_container_width=True):
+        st.session_state.lang = "HU"
+        st.rerun()
+
+t = TEXTS[st.session_state.lang]
+
+# ==========================================
+# 2. HERO BANNER
 # ==========================================
 if os.path.exists(BANNER_FILE):
     st.image(BANNER_FILE, use_container_width=True)
 
 # ==========================================
-# 2. FEJLÉC (LOGO ÉS NYELVVÁLASZTÓ)
+# 3. MENÜSÁV
 # ==========================================
-head_col1, head_col2, head_col3 = st.columns([1, 3, 1])
-
-with head_col1:
-    if os.path.exists(LOGO_FILE):
-        st.image(LOGO_FILE, width=110)
-
-with head_col3:
-    lang_choice = st.selectbox("🌐 Nyelv / Language:", ["🇸🇰 SK", "🇬🇧 EN", "🇭🇺 HU"])
-    lang_code = "SK"
-    if "EN" in lang_choice:
-        lang_code = "EN"
-    elif "HU" in lang_choice:
-        lang_code = "HU"
-    t = TEXTS[lang_code]
-
-# MENÜSÁV
 nav_options = [
     t["nav_home"],
     t["nav_products"],
