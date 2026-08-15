@@ -284,7 +284,7 @@ def display_product_grid(products_df):
         """
         <style>
         [data-testid="stImage"] img {
-            height: 150px !important;
+            height: 165px !important;
             object-fit: contain !important;
             width: 100% !important;
         }
@@ -295,10 +295,10 @@ def display_product_grid(products_df):
 
     products_list = available_products.reset_index(drop=True)
     
-    # Soronkénti 6-os darabolás a tökéletes rácsért
-    for i in range(0, len(products_list), 6):
-        cols = st.columns(6)
-        row_chunk = products_list.iloc[i:i+6]
+    # Soronkénti 5-ös darabolás a tökéletes elrendezésért
+    for i in range(0, len(products_list), 5):
+        cols = st.columns(5)
+        row_chunk = products_list.iloc[i:i+5]
         
         for col_idx, (_, row) in enumerate(row_chunk.iterrows()):
             with cols[col_idx]:
