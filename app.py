@@ -582,31 +582,38 @@ with st.sidebar:
                     else:
                         st.error(t["login_error"])
             
-            with tab_reg:
-                r_name = st.text_input(t["full_name"], key="reg_name")
-                r_email = st.text_input(t["email"], key="reg_email")
-                r_pass = st.text_input("Jelszó", type="password", key="reg_pass")
-                r_phone = st.text_input(t["phone"], key="reg_phone")
-                r_address = st.text_input(t["street_address"], key="reg_addr")
-                r_city = st.text_input(t["city"], key="reg_city")
-                r_zip = st.text_input(t["zip_code"], key="reg_zip")
-                
-                if st.button(t["tab_register"], key="btn_reg_submit"):
-                    if not (r_name and r_email and r_pass):
-                        st.error(t["order_error"])
-                    elif r_email in users:
-                        st.error(t["user_exists"])
-                    else:
-                        users[r_email] = {
-                            "name": r_name,
-                            "password": r_pass,
-                            "phone": r_phone,
-                            "address": r_address,
-                            "city": r_city,
-                            "zip": r_zip
-                        }
-                        save_users(users)
-                        st.success(t["reg_success"])
+            with tab_register:
+    with st.form("register_form"):
+        reg_name = st.text_input(f"{t['full_name']} *")
+        reg_email = st.text_input(f"{t['email']} *")
+        reg_password = st.text_input("Jelszó / Heslo *", type="password")
+        reg_phone = st.text_input(f"{t['phone']} *")
+        reg_address = st.text_input(f"{t['street_address']} *")
+        reg_city = st.text_input(f"{t['city']} *")
+        reg_zip = st.text_input(f"{t['zip_code']} *")
+        
+        # Ha a backend elvárja az országot, legyen benne a formban is:
+        reg_country = "Slovensko" 
+        
+        reg_submit = st.form_submit_button("Registrácia", type="primary")
+        
+        if reg_submit:
+            # Ellenőrizzük az összes kötelező mezőt
+            if not all([reg_name, reg_email, reg_password, reg_phone, reg_address, reg_city, reg_zip]):
+                st.error("Prosím, vyplňte všetky povinné polia!")
+            else:
+                # Regisztráció mentése a session state-be vagy adatbázisba
+                st.session_state.user = {
+                    "name": reg_name,
+                    "email_key": reg_email,
+                    "phone": reg_phone,
+                    "address": reg_address,
+                    "city": reg_city,
+                    "zip": reg_zip,
+                    "country": reg_country
+                }
+                st.success("Úspešná registrácia!")
+                st.rerun()
         st.divider()
 
     st.header(f"🛒 {t['cart_title']}")
