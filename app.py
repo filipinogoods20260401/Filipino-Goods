@@ -438,6 +438,14 @@ def get_eur_huf_rate():
             return float(data["rates"]["HUF"])
     except Exception:
         return 400.0
+        
+def get_product_image(sku):
+    extensions = [".jpg", ".png", ".jpeg", ".webp"]
+    for ext in extensions:
+        img_path = os.path.join("images", f"{sku}{ext}")
+        if os.path.exists(img_path):
+            return img_path
+    return "https://via.placeholder.com/200?text=No+Image"
 
 # --- CHECKOUT / KOSÁR FÜGGVÉNY ---
 def render_checkout_page():
