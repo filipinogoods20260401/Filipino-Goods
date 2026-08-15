@@ -211,16 +211,19 @@ if os.path.exists(BANNER_FILE):
 if os.path.exists(LOGO_FILE):
     st.image(LOGO_FILE, width=110)
 
-# --- 3. NAVIGÁCIÓS MENÜ ÉS NYELVVÁLASZTÓ EGY SORBAN ---
-lang_map = {
-    "🇸🇰 SK": "SK",
-    "🇬🇧 EN": "EN",
-    "🇭🇺 HU": "HU"
+# --- NAVIGÁCIÓS MENÜ ÉS NYELVVÁLASZTÓ EGY SORBAN ---
+# 1. Előkészítjük az opciókat a dinamikus címkézéshez
+lang_display_map = {
+    "🇸🇰 SK": f"Jazyk / Language / Nyelv: 🇸🇰 SK",
+    "🇬🇧 EN": f"Jazyk / Language / Nyelv: 🇬🇧 EN",
+    "🇭🇺 HU": f"Jazyk / Language / Nyelv: 🇭🇺 HU"
 }
-lang_options = list(lang_map.keys())
+reverse_display_map = {v: k for k, v in lang_display_map.items()}
 
 current_code = st.session_state.selected_lang
-current_label = [k for k, v in lang_map.items() if v == current_code][0]
+current_key = [k for k, v in lang_map.items() if v == current_code][0]
+current_display_val = lang_display_map[current_key]
+
 t = TEXTS[current_code]
 
 nav_options = [
@@ -233,8 +236,9 @@ nav_options = [
 ]
 
 # 6 navigációs gomb + 1 legördülő nyelvválasztó egy sorban
-all_cols = st.columns([1, 1, 1, 1, 1, 1, 2])
+all_cols = st.columns([1, 1, 1, 1, 1, 1, 2.5])
 
+# Navigációs gombok
 for idx, page_name in enumerate(nav_options):
     with all_cols[idx]:
         is_active = (st.session_state.current_page_idx == idx)
@@ -247,16 +251,19 @@ for idx, page_name in enumerate(nav_options):
             st.session_state.current_page_idx = idx
             st.rerun()
 
+# Legördülő nyelvválasztó (címke elrejtve, a felirat benne van a gombban)
 with all_cols[6]:
-    selected_lang_label = st.selectbox(
-        f"Jazyk / Language / Nyelv: {current_label}",
-        lang_options,
-        index=lang_options.index(current_label),
+    selected_display_val = st.selectbox(
+        "",
+        options=list(lang_display_map.values()),
+        index=list(lang_display_map.values()).index(current_display_val),
         key="lang_selectbox",
-        label_visibility="visible"
+        label_visibility="collapsed"
     )
     
-    new_lang_code = lang_map[selected_lang_label]
+    # Nyelvváltás figyelése
+    selected_key = reverse_display_map[selected_display_val]
+    new_lang_code = lang_map[selected_key]
     if new_lang_code != st.session_state.selected_lang:
         st.session_state.selected_lang = new_lang_code
         st.rerun()
