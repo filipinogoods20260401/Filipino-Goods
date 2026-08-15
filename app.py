@@ -458,15 +458,3 @@ elif selected_page == t["nav_admin"]:
                 st.rerun()
             else:
                 st.error("Hibás jelszó!")
-
-        else:
-            col_adm1, col_adm2 = st.columns([4, 1])
-            with col_adm1:
-                st.write("Üdvözöljük az Adminisztrációs felületen!")
-            with col_adm2:
-                if st.button("🔒 Kijelentkezés"):
-                    st.session_state.admin_logged_in = False
-                    st.rerun()
-
-            st.divider()
-            st.dataframe(df_products, use_container_width=True)
