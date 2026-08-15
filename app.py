@@ -98,7 +98,13 @@ TEXTS = {
         "password": "Heslo",
         "login_btn": "Prihlásiť sa",
         "logout_btn": "Odhlásiť sa",
-        "stock_updated": "Skladové zásoby boli aktualizované."
+        "stock_updated": "Skladové zásoby boli aktualizované.",
+        "feature_shipping_title": "Rýchle doručenie",
+        "feature_shipping_desc": "Do 2-4 pracovných dní, nad 50 € zadarmo!",
+        "feature_authentic_title": "100% Autentické",
+        "feature_authentic_desc": "Priamo od najobľúbenejších značiek.",
+        "feature_payment_title": "Bezpečná platba",
+        "feature_payment_desc": "Bankový prevod alebo dobierka.",
     },
     "EN": {
         "lang_label": "Language:",
@@ -164,7 +170,13 @@ TEXTS = {
         "password": "Password",
         "login_btn": "Login",
         "logout_btn": "Logout",
-        "stock_updated": "Stock level updated."
+        "stock_updated": "Stock level updated.",
+        "feature_shipping_title": "Fast Shipping",
+        "feature_shipping_desc": "Within 2-4 business days, FREE over €50!",
+        "feature_authentic_title": "100% Authentic",
+        "feature_authentic_desc": "Directly from the most popular brands.",
+        "feature_payment_title": "Secure Payment",
+        "feature_payment_desc": "Bank transfer or cash on delivery.",
     },
     "HU": {
         "lang_label": "Nyelv:",
@@ -230,7 +242,13 @@ TEXTS = {
         "password": "Jelszó",
         "login_btn": "Bejelentkezés",
         "logout_btn": "Kijelentkezés",
-        "stock_updated": "Raktárkészlet frissítve."
+        "stock_updated": "Raktárkészlet frissítve.",
+        "feature_shipping_title": "Gyors Szállítás",
+        "feature_shipping_desc": "2-4 munkanapon belül, 50 € felett ingyenes!",
+        "feature_authentic_title": "100% Autentikus",
+        "feature_authentic_desc": "Közvetlenül a legnépszerűbb márkáktól.",
+        "feature_payment_title": "Biztonságos Fizetés",
+        "feature_payment_desc": "Banki átutalás vagy utánvét.",
     }
 }
 
