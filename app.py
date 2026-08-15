@@ -322,6 +322,138 @@ def get_eur_huf_rate():
     except Exception:
         return 400.0
 
+def render_checkout_page():
+    st.divider()
+    st.title("🛒 Kosár és Fizetés / Košík a Platba")
+
+    if not st.session_state.cart:
+        st.warning("A kosár jelenleg üres. / Váš košík je prázdny.")
+        if st.button("⬅️ Vissza a vásárláshoz / Späť do obchodu", key="btn_back_empty_cart"):
+            st.session_state.show_checkout = False
+            st.session_state.page = "home"
+            st.rerun()
+    else:
+        cart_total = 0.0
+        for sku, qty in st.session_state.cart.items():
+            product_row = products_df[products_df["SKU"].astype(str) == str(sku)]
+            if not product_row.empty:
+                p_price = float(product_row.iloc[0]["Selling Price (€)"])
+                cart_total += p_price * qty
+
+        eur_huf = get_eur_huf_rate()
+        cart_huf = cart_total * eur_huf
+
+        st.subheader("📋 Rendelés áttekintése / Prehľad objednávky")
+        
+        for sku, qty in list(st.session_state.cart.items()):
+            product_row = products_df[products_df["SKU"].astype(str) == str(sku)]
+            if not product_row.empty:
+                p_name = product_row.iloc[0]["Product Name"]
+                p_price = float(product_row.iloc[0]["Selling Price (€)"])
+                subtotal = p_price * qty
+                
+                col_p1, col_p2, col_p3 = st.columns([3, 1, 1])
+                with col_p1:
+                    st.write(f"**{p_name}** (SKU: `{sku}`)")
+                with col_p2:
+                    st.write(f"{qty} ks × {p_price:.2f} €")
+                with col_p3:
+                    st.write(f"**{subtotal:.2f} €**")
+        
+        st.divider()
+        st.markdown(f"### **Összesen / Spolu: {cart_total:.2f} €**")
+        st.caption(f"≈ {cart_huf:,.0f} HUF".replace(",", " "))
+        st.caption(f"*(1 EUR = {eur_huf:.2f} HUF)*")
+        st.divider()
+
+        u = st.session_state.user or {}
+
+        with st.form("checkout_form"):
+            st.subheader("🚚 Szállítási adatok (Kizárólag Szlovákia)")
+            
+            if st.session_state.user:
+                st.info("Adatait automatikusan kitöltöttük a fiókjából.")
+
+            col_a, col_b = st.columns(2)
+            with col_a:
+                name = st.text_input("Név / Meno a Priezvisko *", value=u.get("name", ""))
+                email = st.text_input("E-mail *", value=u.get("email_key", ""))
+                phone = st.text_input("Telefonszám / Telefónne číslo *", value=u.get("phone", ""))
+            with col_b:
+                address = st.text_input("Utca, házszám / Ulica a číslo *", value=u.get("address", ""))
+                city = st.text_input("Város / Mesto *", value=u.get("city", ""))
+                zip_code = st.text_input("Irányítószám / PSČ *", value=u.get("zip", ""))
+
+            st.selectbox("Ország / Krajina", ["Slovensko"], disabled=True)
+
+            st.subheader("💳 Fizetési mód / Platobná metóda")
+            payment_method = st.radio(
+                "Válasszon fizetési opciót:",
+                [
+                    "💳 Online bankkártya (Barion / GP webpay)",
+                    "🏦 Banki átutalás (SEPA / Díjmentes)",
+                    "🚚 Utánvét (+1.50 €)"
+                ],
+                key="checkout_payment_radio"
+            )
+
+            notes = st.text_area("Megjegyzés a rendeléshez / Poznámka", key="checkout_notes")
+            submit = st.form_submit_button("Rendelés véglegesítése és fizetés ➔", type="primary", use_container_width=True)
+
+            if submit:
+                if not (name and email and phone and address and city and zip_code):
+                    st.error("Kérjük, töltse ki az összes kötelező mezőt! / Prosím, vyplňte všetky povinné polia!")
+                else:
+                    is_cod = "Utánvét" in payment_method
+                    cod_fee = 1.50 if is_cod else 0.0
+                    final_total = cart_total + cod_fee
+                    final_huf = final_total * eur_huf
+
+                    for sku, qty in st.session_state.cart.items():
+                        idx = products_df[products_df["SKU"].astype(str) == str(sku)].index
+                        if not idx.empty:
+                            products_df.loc[idx, "Current Stock"] -= qty
+
+                    try:
+                        file_path = "Inventory management spreadsheet base.xlsx"
+                        if not os.path.exists(file_path):
+                            file_path = "products.xlsx"
+                        products_df.to_excel(file_path, index=False)
+                        st.cache_data.clear()
+                    except Exception:
+                        pass
+
+                    st.success("A rendelés sikeresen rögzítve! / Objednávka bola úspešne vytvorená!")
+                    st.divider()
+                    st.subheader("💳 Fizetési információk / Informácie k platbe")
+
+                    if "Online bankkártya" in payment_method:
+                        st.info(f"Fizetendő összeg: **{final_total:.2f} €** (≈ **{final_huf:,.0f} HUF**)")
+                        st.link_button(
+                            "Kattintson ide a kártyás fizetéshez ➔", 
+                            "https://www.barion.com", 
+                            type="primary", 
+                            use_container_width=True
+                        )
+                    elif "Banki átutalás" in payment_method:
+                        st.warning(
+                            f"🏦 **Utaláshoz szükséges adatok / Údaje pre platbu:**\n\n"
+                            f"- **Fizetendő összeg / Suma:** {final_total:.2f} € (≈ {final_huf:,.0f} HUF)\n"
+                            f"- **IBAN:** SK89 0000 0000 1234 5678\n"
+                            f"- **SWIFT/BIC:** SUBASKBX\n"
+                            f"- **Közlemény / Variabilný symbol:** {email}\n\n"
+                            f"*Magyarországi számláról indított átutalás esetén kérjük, EUR alapon (SEPA) küldje az összeget.*"
+                        )
+                    else:
+                        st.info(f"🚚 A rendelés összegét (**{final_total:.2f} €** / ≈ **{final_huf:,.0f} HUF**) a futárnak tudja kifizetni átvételkor készpénzzel vagy kártyával.")
+
+                    st.session_state.cart = {}
+
+        if st.button("⬅️ Vissza a vásárláshoz", key="btn_back_checkout_bottom"):
+            st.session_state.show_checkout = False
+            st.session_state.page = "home"
+            st.rerun()
+
 def get_product_image(sku):
     extensions = [".jpg", ".png", ".jpeg", ".webp"]
     for ext in extensions:
