@@ -346,7 +346,7 @@ def display_product_grid(products_df):
                 with b_col:
                     if st.button(t['add_to_cart'], key=f"btn_{sku}_{i}_{col_idx}", use_container_width=False):
                         st.session_state.cart[sku] = st.session_state.cart.get(sku, 0) + quantity
-                        st.toast(f"✅ Dodané do košíka! ({quantity}x {p_name})")
+                        st.toast(f"✅ {t['added_to_cart']} ({quantity}x {p_name})")
                         st.rerun()
 
                 st.divider()
