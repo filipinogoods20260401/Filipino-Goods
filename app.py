@@ -552,11 +552,12 @@ def render_checkout_page():
                             use_container_width=True
                         )
                     elif "Banki átutalás" in payment_method:
+                        bank_info = load_bank_details()
                         st.warning(
                             f"🏦 **Utaláshoz szükséges adatok / Údaje pre platbu:**\n\n"
                             f"- **Fizetendő összeg / Suma:** {final_total:.2f} € (≈ {final_huf:,.0f} HUF)\n"
-                            f"- **IBAN:** SK89 0000 0000 1234 5678\n"
-                            f"- **SWIFT/BIC:** SUBASKBX\n"
+                            f"- **IBAN:** {bank_info['iban']}\n"
+                            f"- **SWIFT/BIC:** {bank_info['swift']}\n"
                             f"- **Közlemény / Variabilný symbol:** {email}\n\n"
                             f"*Magyarországi számláról indított átutalás esetén kérjük, EUR alapon (SEPA) küldje az összeget.*"
                         )
