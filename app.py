@@ -722,7 +722,6 @@ def display_product_grid(df_to_show):
 
 # --- FELSŐ NAVIGÁCIÓS SÁV ---
 cart_count = sum(st.session_state.cart.values()) if st.session_state.get("cart") else 0
-
 cart_label = f"🛒 {t.get('cart_title', 'Kosár')} ({cart_count})" if cart_count > 0 else f"🛒 {t.get('cart_title', 'Kosár')}"
 
 pages = [
@@ -735,44 +734,65 @@ pages = [
     ("admin", "Admin")
 ]
 
-nav_cols = st.columns([1.2, 1.2, 1.2, 1.4, 1.2, 1.3, 1, 0.8, 0.8, 0.8, 0.8])
+# CSS: Megakadályozza a szavak elvágását, és mobilon görgethetővé teszi a menüt
+st.markdown("""
+<style>
+    div[data-testid="column"] button {
+        white-space: nowrap !important;
+        word-break: normal !important;
+        padding: 6px 12px !important;
+    }
+    @media (max-width: 768px) {
+        div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) {
+            display: flex !important;
+            flex-wrap: nowrap !important;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 10px;
+        }
+        div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) > div {
+            flex: 0 0 auto !important;
+            min-width: max-content !important;
+        }
+    }
+</style>
+""", unsafe_allow_html=True)
 
-for idx, (page_key, page_label) in enumerate(pages):
-    with nav_cols[idx]:
-        is_active = (st.session_state.get("current_page") == page_key or st.session_state.get("page") == page_key)
-        
-        btn_type = "secondary"
-        if is_active:
-            btn_type = "primary"
-        elif page_key == "cart" and cart_count > 0:
-            btn_type = "primary"
-        elif page_key == "admin":
-            btn_type = "primary"
+# Két fő rész: Navigációs gombok (balra) + Nyelvválasztó (jobbra)
+menu_col, lang_col = st.columns([8, 2])
 
-        if st.button(page_label, key=f"nav_{page_key}", type=btn_type, use_container_width=True):
-            st.session_state.page = page_key
-            st.session_state.current_page = page_key
-            st.session_state.show_checkout = (page_key == "cart")
-            st.rerun()
+with menu_col:
+    nav_cols = st.columns(len(pages))
+    for idx, (page_key, page_label) in enumerate(pages):
+        with nav_cols[idx]:
+            is_active = (st.session_state.get("current_page") == page_key or st.session_state.get("page") == page_key)
+            
+            btn_type = "secondary"
+            if is_active or (page_key == "cart" and cart_count > 0) or page_key == "admin":
+                btn_type = "primary"
 
-with nav_cols[7]:
-    st.markdown(f"<div style='text-align: right; padding-top: 6px; font-weight: bold;'>{t.get('lang_label', 'Nyelv:')}</div>", unsafe_allow_html=True)
-
-languages = [
-    ("SK", "https://flagcdn.com/24x18/sk.png", "SK"),
-    ("EN", "https://flagcdn.com/24x18/gb.png", "EN"),
-    ("HU", "https://flagcdn.com/24x18/hu.png", "HU")
-]
-
-for l_idx, (code, img_url, label) in enumerate(languages):
-    with nav_cols[8 + l_idx]:
-        is_lang_active = (st.session_state.get("selected_lang") == code)
-        button_label = f"![{label}]({img_url}) {label}"
-        
-        if st.button(button_label, key=f"lang_btn_{code}", type="primary" if is_lang_active else "secondary", use_container_width=True):
-            if st.session_state.selected_lang != code:
-                st.session_state.selected_lang = code
+            if st.button(page_label, key=f"nav_{page_key}", type=btn_type, use_container_width=True):
+                st.session_state.page = page_key
+                st.session_state.current_page = page_key
+                st.session_state.show_checkout = (page_key == "cart")
                 st.rerun()
+
+with lang_col:
+    lang_options = {"SK": "🇸🇰 SK", "EN": "🇬🇧 EN", "HU": "🇭🇺 HU"}
+    current_lang = st.session_state.get("selected_lang", "SK")
+    
+    selected_lang_code = st.selectbox(
+        label=t.get("lang_label", "Nyelv:"),
+        options=list(lang_options.keys()),
+        format_func=lambda x: lang_options[x],
+        index=list(lang_options.keys()).index(current_lang) if current_lang in lang_options else 0,
+        key="lang_select_box",
+        label_visibility="collapsed"
+    )
+    
+    if selected_lang_code != current_lang:
+        st.session_state.selected_lang = selected_lang_code
+        st.rerun()
 
 st.divider()
 
