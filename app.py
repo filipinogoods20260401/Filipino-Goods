@@ -262,8 +262,8 @@ def display_product_grid(products_df):
         st.info("No products found.")
         return
 
-    # 3 helyett 5 oszlopot használunk, így kisebbek lesznek a kártyák
-    NUM_COLS = 5
+    # 6 oszlopos elrendezés a kisebb képekért
+    NUM_COLS = 6
     cols = st.columns(NUM_COLS)
     
     for idx, row in products_df.reset_index(drop=True).iterrows():
@@ -275,27 +275,31 @@ def display_product_grid(products_df):
         img_src = get_product_image(sku)
 
         with cols[col_idx]:
-            # A képek automatikusan a szűkebb oszlophoz igazodnak
             st.image(img_src, use_container_width=True)
             
-            # Kisebb címsor (####) a kompaktabb megjelenésért
             st.markdown(f"#### {p_name}")
             st.caption(f"🔑 **SKU:** `{sku}`")
             st.write(f"💶 **{t['price']}:** {p_price:.2f} €")
             st.write(f"📦 **{t['stock']}:** {p_stock} ks")
             
             if p_stock > 0:
-                quantity = st.number_input(
-                    t['qty'],
-                    min_value=1,
-                    max_value=p_stock,
-                    value=1,
-                    key=f"qty_{sku}"
-                )
-                if st.button(t['add_to_cart'], key=f"btn_{sku}", use_container_width=True):
-                    st.session_state.cart[sku] = st.session_state.cart.get(sku, 0) + quantity
-                    st.toast(f"✅ Dodané do košíka! ({quantity}x {p_name})")
-                    st.rerun()
+                # Mennyiségválasztó és Kosárba gomb egymás mellett (1:2 arányban)
+                q_col, b_col = st.columns([1, 2])
+                
+                with q_col:
+                    quantity = st.number_input(
+                        t['qty'],
+                        min_value=1,
+                        max_value=p_stock,
+                        value=1,
+                        key=f"qty_{sku}",
+                        label_visibility="collapsed"  # Elrejtjük a felette lévő feliratot, hogy szépen illeszkedjen a gombhoz
+                    )
+                with b_col:
+                    if st.button(t['add_to_cart'], key=f"btn_{sku}", use_container_width=True):
+                        st.session_state.cart[sku] = st.session_state.cart.get(sku, 0) + quantity
+                        st.toast(f"✅ Dodané do košíka! ({quantity}x {p_name})")
+                        st.rerun()
             else:
                 st.error(t['out_of_stock'])
             st.divider()
