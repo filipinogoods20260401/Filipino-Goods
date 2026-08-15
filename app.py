@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 import json
+import urllib.request
 
 # --- OLDAL BEÁLLÍTÁSA ---
 st.set_page_config(
@@ -310,7 +311,7 @@ def save_users(users):
     with open(USERS_FILE, "w", encoding="utf-8") as f:
         json.dump(users, f, ensure_ascii=False, indent=4)
 
-@st.cache_data(ttl=3600)  # 1 óránként frissíti az árfolyamot
+@st.cache_data(ttl=3600)
 def get_eur_huf_rate():
     try:
         url = "https://open.er-api.com/v6/latest/EUR"
@@ -319,7 +320,7 @@ def get_eur_huf_rate():
             data = json.loads(response.read().decode())
             return float(data["rates"]["HUF"])
     except Exception:
-        return 400.0  # Tartalék árfolyam, ha a hálózati kérés nem sikerülne
+        return 400.0
 
 def get_product_image(sku):
     extensions = [".jpg", ".png", ".jpeg", ".webp"]
@@ -328,8 +329,6 @@ def get_product_image(sku):
         if os.path.exists(img_path):
             return img_path
     return "https://via.placeholder.com/200?text=No+Image"
-
-import urllib.request
 
 # --- RÁCS MEGJELENÍTŐ FÜGGVÉNY ---
 def display_product_grid(df_to_show):
@@ -361,6 +360,7 @@ def display_product_grid(df_to_show):
     )
 
     products_list = available_products.reset_index(drop=True)
+    eur_huf = get_eur_huf_rate()
     
     for i in range(0, len(products_list), 5):
         cols = st.columns(5)
@@ -373,6 +373,7 @@ def display_product_grid(df_to_show):
                 p_price = float(row['Selling Price (€)'])
                 p_stock = int(row['Current Stock'])
                 img_src = get_product_image(sku)
+                p_huf = p_price * eur_huf
 
                 st.image(img_src, use_container_width=True)
                 
@@ -615,6 +616,7 @@ with st.sidebar:
     else:
         cart_total = 0.0
         items_to_remove = []
+        eur_huf = get_eur_huf_rate()
         
         for sku, qty in list(st.session_state.cart.items()):
             product_row = products_df[products_df["SKU"].astype(str) == str(sku)]
@@ -651,7 +653,9 @@ with st.sidebar:
             del st.session_state.cart[sku]
             st.rerun()
             
+        cart_huf = cart_total * eur_huf
         st.markdown(f"### **{t['total']}: {cart_total:.2f} €**")
+        st.caption(f"≈ {cart_huf:,.0f} HUF".replace(",", " "))
         
         c_btn1, c_btn2 = st.columns(2)
         with c_btn1:
