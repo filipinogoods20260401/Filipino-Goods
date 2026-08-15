@@ -486,7 +486,7 @@ if current_p == "cart" or st.session_state.get("show_checkout", False):
 
     if not st.session_state.cart:
         st.warning("A kosár jelenleg üres. / Váš košík je prázdny.")
-        if st.button("⬅️ Vissza a vásárláshoz / Späť do obchodu"):
+        if st.button("⬅️ Vissza a vásárláshoz / Späť do obchodu", key="btn_back_empty_cart"):
             st.session_state.show_checkout = False
             st.session_state.page = "home"
             st.rerun()
@@ -546,15 +546,16 @@ if current_p == "cart" or st.session_state.get("show_checkout", False):
 
             st.subheader("💳 Fizetési mód / Platobná metóda")
             payment_method = st.radio(
-                "Válasszon fizetési opciót (Magyar és szlovák kártyák/számlák elfogadva):",
+                "Válasszon fizetési opciót:",
                 [
                     "💳 Online bankkártya (Barion / GP webpay)",
                     "🏦 Banki átutalás (SEPA / Díjmentes)",
                     "🚚 Utánvét (+1.50 €)"
-                ]
+                ],
+                key="checkout_payment_radio"
             )
 
-            notes = st.text_area("Megjegyzés a rendeléshez / Poznámka")
+            notes = st.text_area("Megjegyzés a rendeléshez / Poznámka", key="checkout_notes")
             submit = st.form_submit_button("Rendelés véglegesítése és fizetés ➔", type="primary", use_container_width=True)
 
             if submit:
@@ -606,7 +607,7 @@ if current_p == "cart" or st.session_state.get("show_checkout", False):
 
                     st.session_state.cart = {}
 
-        if st.button("⬅️ Vissza a vásárláshoz"):
+        if st.button("⬅️ Vissza a vásárláshoz", key="btn_back_checkout_bottom"):
             st.session_state.show_checkout = False
             st.session_state.page = "home"
             st.rerun()
