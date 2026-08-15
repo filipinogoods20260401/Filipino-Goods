@@ -210,23 +210,16 @@ if os.path.exists(LOGO_FILE):
     st.image(LOGO_FILE, width=110)
 
 # --- 3. NAVIGÁCIÓS MENÜ ÉS NYELVVÁLASZTÓ EGY SORBAN ---
-lang_map = {
+lang_options = ["🇸🇰 SK", "🇬🇧 EN", "🇭🇺 HU"]
+lang_code_map = {
     "🇸🇰 SK": "SK",
     "🇬🇧 EN": "EN",
     "🇭🇺 HU": "HU"
 }
-
-lang_display_map = {
-    "🇸🇰 SK": "Jazyk / Language / Nyelv: 🇸🇰 SK",
-    "🇬🇧 EN": "Jazyk / Language / Nyelv: 🇬🇧 EN",
-    "🇭🇺 HU": "Jazyk / Language / Nyelv: 🇭🇺 HU"
-}
-reverse_display_map = {v: k for k, v in lang_display_map.items()}
+code_to_option = {v: k for k, v in lang_code_map.items()}
 
 current_code = st.session_state.selected_lang
-current_key = [k for k, v in lang_map.items() if v == current_code][0]
-current_display_val = lang_display_map[current_key]
-
+current_option = code_to_option[current_code]
 t = TEXTS[current_code]
 
 nav_options = [
@@ -238,7 +231,6 @@ nav_options = [
     t["nav_admin"]
 ]
 
-# 6 navigációs gomb + 1 legördülő nyelvválasztó egy sorban
 all_cols = st.columns([1, 1, 1, 1, 1, 1, 2.5])
 
 for idx, page_name in enumerate(nav_options):
@@ -254,16 +246,14 @@ for idx, page_name in enumerate(nav_options):
             st.rerun()
 
 with all_cols[6]:
-    selected_display_val = st.selectbox(
-        "",
-        options=list(lang_display_map.values()),
-        index=list(lang_display_map.values()).index(current_display_val),
-        key="lang_selectbox",
-        label_visibility="collapsed"
+    selected_option = st.selectbox(
+        f"🌐 Jazyk / Language / Nyelv:",
+        options=lang_options,
+        index=lang_options.index(current_option),
+        key="lang_selectbox"
     )
     
-    selected_key = reverse_display_map[selected_display_val]
-    new_lang_code = lang_map[selected_key]
+    new_lang_code = lang_code_map[selected_option]
     if new_lang_code != st.session_state.selected_lang:
         st.session_state.selected_lang = new_lang_code
         st.rerun()
