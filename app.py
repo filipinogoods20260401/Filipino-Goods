@@ -244,7 +244,7 @@ t = TEXTS[st.session_state.selected_lang]
 # --- ADATOK BETÖLTÉSE ---
 @st.cache_data
 def load_products():
-    file_path = "products.xlsx"
+    file_path = "Inventory management spreadsheet base.xlsx"
     if os.path.exists(file_path):
         df = pd.read_excel(file_path)
         return df
