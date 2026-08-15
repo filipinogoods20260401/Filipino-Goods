@@ -6,6 +6,10 @@ import urllib.request
 from io import BytesIO
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+import stripe  # <-- Stripe modul importálása
+
+# Stripe API kulcs betöltése a beállított Secrets-ből
+stripe.api_key = st.secrets.get("STRIPE_SECRET_KEY", "")
 
 # --- OLDAL BEÁLLÍTÁSA ---
 st.set_page_config(
