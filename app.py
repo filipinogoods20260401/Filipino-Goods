@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
+import json
 
 # --- OLDAL BEÁLLÍTÁSA ---
 st.set_page_config(
@@ -80,7 +81,16 @@ TEXTS = {
         "feature_authentic_title": "100% Autentické",
         "feature_authentic_desc": "Priamo od najobľúbenejších značiek.",
         "feature_payment_title": "Bezpečná platba",
-        "feature_payment_desc": "Bankový prevod alebo dobierka."
+        "feature_payment_desc": "Bankový prevod alebo dobierka.",
+        "login_title": "Prihlásenie / Registrácia",
+        "tab_login": "Prihlásenie",
+        "tab_register": "Registrácia",
+        "reg_success": "Úspešná registrácia! Teraz sa môžete prihlásiť.",
+        "login_success": "Vitajte späť,",
+        "login_error": "Nesprávny e-mail alebo heslo!",
+        "user_exists": "S týmto e-mailom už existuje účet!",
+        "logout_user": "Odhlásiť sa",
+        "autofill_notice": "Vaše údaje boli automaticky vyplnené z účtu."
     },
     "EN": {
         "lang_label": "Language:",
@@ -151,7 +161,16 @@ TEXTS = {
         "feature_authentic_title": "100% Authentic",
         "feature_authentic_desc": "Directly from the most popular brands.",
         "feature_payment_title": "Secure Payment",
-        "feature_payment_desc": "Bank transfer or cash on delivery."
+        "feature_payment_desc": "Bank transfer or cash on delivery.",
+        "login_title": "Customer Login / Register",
+        "tab_login": "Login",
+        "tab_register": "Register",
+        "reg_success": "Registration successful! You can now log in.",
+        "login_success": "Welcome back,",
+        "login_error": "Incorrect email or password!",
+        "user_exists": "An account with this email already exists!",
+        "logout_user": "Logout",
+        "autofill_notice": "Your billing details were automatically filled from your profile."
     },
     "HU": {
         "lang_label": "Nyelv:",
@@ -222,7 +241,16 @@ TEXTS = {
         "feature_authentic_title": "100% Autentikus",
         "feature_authentic_desc": "Közvetlenül a legnépszerűbb márkáktól.",
         "feature_payment_title": "Biztonságos Fizetés",
-        "feature_payment_desc": "Banki átutalás vagy utánvét."
+        "feature_payment_desc": "Banki átutalás vagy utánvét.",
+        "login_title": "Vásárlói Bejelentkezés / Regisztráció",
+        "tab_login": "Bejelentkezés",
+        "tab_register": "Regisztráció",
+        "reg_success": "Sikeres regisztráció! Most már bejelentkezhetsz.",
+        "login_success": "Üdvözlünk újra,",
+        "login_error": "Helytelen e-mail cím vagy jelszó!",
+        "user_exists": "Ezzel az e-mail címmel már regisztráltak!",
+        "logout_user": "Kijelentkezés",
+        "autofill_notice": "A vásárlói adataidat automatikusan kitöltöttük a fiókodból."
     }
 }
 
@@ -239,38 +267,48 @@ if "cart" not in st.session_state:
 if "admin_logged_in" not in st.session_state:
     st.session_state.admin_logged_in = False
 
+if "user" not in st.session_state:
+    st.session_state.user = None
+
 t = TEXTS[st.session_state.selected_lang]
 
 # --- ADATOK BETÖLTÉSE ---
-@st.cache_data
 @st.cache_data
 def load_products():
     file_path = "Inventory management spreadsheet base.xlsx"
     if not os.path.exists(file_path):
         file_path = "products.xlsx"
 
-    if os.path.exists(file_path):
-        df = pd.read_excel(file_path)
-        
-        # Szóközök eltávolítása az oszlopnevek elejéről/végéről
-        df.columns = df.columns.str.strip()
-        
-        # Oszlopnevek automatiskus igazítása, ha másképp szerepelnek
-        column_mapping = {
-            "Selling Price": "Selling Price (€)",
-            "Price": "Selling Price (€)",
-            "Price (€)": "Selling Price (€)",
-            "Ár": "Selling Price (€)",
-            "Stock": "Current Stock",
-            "Quantity": "Current Stock",
-            "Készlet": "Current Stock",
-            "Name": "Product Name",
-            "Terméknév": "Product Name"
-        }
-        df = df.rename(columns=column_mapping)
-        return df
+    df = pd.read_excel(file_path)
+    df.columns = df.columns.str.strip()
+    
+    column_mapping = {
+        "Selling Price": "Selling Price (€)",
+        "Price": "Selling Price (€)",
+        "Price (€)": "Selling Price (€)",
+        "Ár": "Selling Price (€)",
+        "Stock": "Current Stock",
+        "Quantity": "Current Stock",
+        "Készlet": "Current Stock",
+        "Name": "Product Name",
+        "Terméknév": "Product Name"
+    }
+    df = df.rename(columns=column_mapping)
+    return df
 
 products_df = load_products()
+
+USERS_FILE = "users.json"
+
+def load_users():
+    if os.path.exists(USERS_FILE):
+        with open(USERS_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+def save_users(users):
+    with open(USERS_FILE, "w", encoding="utf-8") as f:
+        json.dump(users, f, ensure_ascii=False, indent=4)
 
 def get_product_image(sku):
     extensions = [".jpg", ".png", ".jpeg", ".webp"]
@@ -288,7 +326,6 @@ def display_product_grid(df_to_show):
         st.info(t["no_products_found"])
         return
 
-    # Globális CSS a képekhez és mezőkhöz
     st.markdown(
         """
         <style>
@@ -312,7 +349,6 @@ def display_product_grid(df_to_show):
 
     products_list = available_products.reset_index(drop=True)
     
-    # Soronként 5 termék
     for i in range(0, len(products_list), 5):
         cols = st.columns(5)
         row_chunk = products_list.iloc[i:i+5]
@@ -426,7 +462,7 @@ elif st.session_state.current_page == "Products":
     if search_term:
         filtered_df = products_df[
             products_df["Product Name"].str.contains(search_term, case=False, na=False) |
-            products_df["SKU"].str.contains(search_term, case=False, na=False)
+            products_df["SKU"].astype(str).str.contains(search_term, case=False, na=False)
         ]
     
     display_product_grid(filtered_df)
@@ -472,26 +508,195 @@ elif st.session_state.current_page == "Admin":
         admin_password = st.text_input(t["enter_password"], type="password")
         
         if st.button(t["login_btn"], type="primary"):
-            if admin_password == "admin123":  # Állítsd be a kívánt jelszót!
+            if admin_password == "admin123":
                 st.session_state.admin_logged_in = True
                 st.rerun()
             else:
                 st.error("Helytelen jelszó / Incorrect password / Nesprávne heslo!")
     else:
-        if st.button(t["logout_btn"]):
-            st.session_state.admin_logged_in = False
-            st.rerun()
-            st.write("Skladové zásoby a správa produktov:")
-            st.dataframe(products_df)
-        else:
-            st.subheader("🔐 Bejelentkezés")
-            input_pwd = st.text_input("Adja meg az admin jelszót:", type="password")
+        top_col1, top_col2 = st.columns([8, 2])
+        with top_col2:
+            if st.button(f"🚪 {t['logout_btn']}", use_container_width=True):
+                st.session_state.admin_logged_in = False
+                st.rerun()
+            
+        st.subheader("📦 Raktárkészlet és Termékek Kezelése")
         
-            if st.button("Bejelentkezés", type="primary"):
-                if input_pwd == ADMIN_PASSWORD:
-                    st.session_state.admin_logged_in = True
-                    st.session_state.last_activity = datetime.now()
-                    st.success("Sikeres bejelentkezés!")                    
-                    st.rerun()
-                else:
-                    st.error("Hibás jelszó!")
+        edited_df = st.data_editor(
+            products_df,
+            num_rows="dynamic",
+            use_container_width=True,
+            key="admin_editor"
+        )
+        
+        if st.button("💾 Módosítások Mentése (Save Changes)", type="primary"):
+            try:
+                file_path = "Inventory management spreadsheet base.xlsx"
+                if not os.path.exists(file_path):
+                    file_path = "products.xlsx"
+                edited_df.to_excel(file_path, index=False)
+                st.cache_data.clear()
+                st.success(f"✅ {t['stock_updated']}")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Hiba a mentés során: {e}")
+
+# --- KOSÁR ÉS BEJELENTKEZÉS (OLDALSÁV / SIDEBAR) ---
+with st.sidebar:
+    users = load_users()
+    
+    if st.session_state.user:
+        st.success(f"👋 {t['login_success']} **{st.session_state.user['name']}**!")
+        if st.button(t["logout_user"], key="user_logout"):
+            st.session_state.user = None
+            st.rerun()
+        st.divider()
+    else:
+        with st.expander(f"👤 {t['login_title']}"):
+            tab_log, tab_reg = st.tabs([t["tab_login"], t["tab_register"]])
+            
+            with tab_log:
+                l_email = st.text_input("E-mail", key="log_email")
+                l_pass = st.text_input("Jelszó", type="password", key="log_pass")
+                if st.button(t["login_btn"], key="btn_login_submit"):
+                    if l_email in users and users[l_email]["password"] == l_pass:
+                        st.session_state.user = users[l_email]
+                        st.session_state.user["email_key"] = l_email
+                        st.rerun()
+                    else:
+                        st.error(t["login_error"])
+            
+            with tab_reg:
+                r_name = st.text_input(t["full_name"], key="reg_name")
+                r_email = st.text_input(t["email"], key="reg_email")
+                r_pass = st.text_input("Jelszó", type="password", key="reg_pass")
+                r_phone = st.text_input(t["phone"], key="reg_phone")
+                r_address = st.text_input(t["street_address"], key="reg_addr")
+                r_city = st.text_input(t["city"], key="reg_city")
+                r_zip = st.text_input(t["zip_code"], key="reg_zip")
+                
+                if st.button(t["tab_register"], key="btn_reg_submit"):
+                    if not (r_name and r_email and r_pass):
+                        st.error(t["order_error"])
+                    elif r_email in users:
+                        st.error(t["user_exists"])
+                    else:
+                        users[r_email] = {
+                            "name": r_name,
+                            "password": r_pass,
+                            "phone": r_phone,
+                            "address": r_address,
+                            "city": r_city,
+                            "zip": r_zip
+                        }
+                        save_users(users)
+                        st.success(t["reg_success"])
+        st.divider()
+
+    st.header(f"🛒 {t['cart_title']}")
+    
+    if not st.session_state.cart:
+        st.info(t["cart_empty"])
+    else:
+        cart_total = 0.0
+        items_to_remove = []
+        
+        for sku, qty in list(st.session_state.cart.items()):
+            product_row = products_df[products_df["SKU"].astype(str) == str(sku)]
+            
+            if not product_row.empty:
+                p_name = product_row.iloc[0]["Product Name"]
+                p_price = float(product_row.iloc[0]["Selling Price (€)"])
+                item_subtotal = p_price * qty
+                cart_total += item_subtotal
+                
+                st.markdown(f"**{p_name}**")
+                st.caption(f"SKU: `{sku}` | {p_price:.2f} € / ks")
+                
+                c1, c2 = st.columns([2, 1])
+                with c1:
+                    new_qty = st.number_input(
+                        t["qty"], 
+                        min_value=1, 
+                        value=qty, 
+                        key=f"cart_qty_{sku}",
+                        label_visibility="collapsed"
+                    )
+                    if new_qty != qty:
+                        st.session_state.cart[sku] = new_qty
+                        st.rerun()
+                with c2:
+                    if st.button("🗑️", key=f"cart_del_{sku}"):
+                        items_to_remove.append(sku)
+                
+                st.write(f"**{t['total']}: {item_subtotal:.2f} €**")
+                st.divider()
+
+        for sku in items_to_remove:
+            del st.session_state.cart[sku]
+            st.rerun()
+            
+        st.markdown(f"### **{t['total']}: {cart_total:.2f} €**")
+        
+        c_btn1, c_btn2 = st.columns(2)
+        with c_btn1:
+            if st.button(t["clear_cart"], use_container_width=True):
+                st.session_state.cart = {}
+                st.rerun()
+        with c_btn2:
+            if st.button(t["checkout_btn"], type="primary", use_container_width=True):
+                st.session_state.show_checkout = True
+
+# --- RENDELÉSI ŰRLAP MODÁLIS / DIALÓGUS ---
+if st.session_state.get("show_checkout", False):
+    st.divider()
+    st.title(f"💳 {t['checkout_title']}")
+    
+    u = st.session_state.user or {}
+    
+    with st.form("checkout_form"):
+        st.subheader(t["customer_info"])
+        if st.session_state.user:
+            st.info(t["autofill_notice"])
+            
+        col_a, col_b = st.columns(2)
+        with col_a:
+            name = st.text_input(f"{t['full_name']} *", value=u.get("name", ""))
+            email = st.text_input(f"{t['email']} *", value=u.get("email_key", ""))
+            phone = st.text_input(f"{t['phone']} *", value=u.get("phone", ""))
+        with col_b:
+            address = st.text_input(f"{t['street_address']} *", value=u.get("address", ""))
+            city = st.text_input(f"{t['city']} *", value=u.get("city", ""))
+            zip_code = st.text_input(f"{t['zip_code']} *", value=u.get("zip", ""))
+            
+        country = st.selectbox(t["country"], ["Slovensko", "Magyarország", "Austria", "Czech Republic"])
+        payment_method = st.radio(t["payment_method"], [t["pay_bank"], t["pay_cod"]])
+        notes = st.text_area(t["order_notes"])
+        
+        submit = st.form_submit_button(t["submit_order"], type="primary", use_container_width=True)
+        
+        if submit:
+            if not (name and email and phone and address and city and zip_code):
+                st.error(t["order_error"])
+            else:
+                for sku, qty in st.session_state.cart.items():
+                    idx = products_df[products_df["SKU"].astype(str) == str(sku)].index
+                    if not idx.empty:
+                        products_df.loc[idx, "Current Stock"] -= qty
+                
+                try:
+                    file_path = "Inventory management spreadsheet base.xlsx"
+                    if not os.path.exists(file_path):
+                        file_path = "products.xlsx"
+                    products_df.to_excel(file_path, index=False)
+                    st.cache_data.clear()
+                except Exception:
+                    pass
+                
+                st.success(t["order_success"])
+                st.session_state.cart = {}
+                st.session_state.show_checkout = False
+                
+    if st.button(f"⬅️ {t['back']}"):
+        st.session_state.show_checkout = False
+        st.rerun()
