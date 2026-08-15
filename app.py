@@ -470,12 +470,11 @@ elif st.session_state.current_page == "Admin":
         if st.button(t["logout_btn"]):
             st.session_state.admin_logged_in = False
             st.rerun()
-            
-        st.write("Skladové zásoby a správa produktov:")
-        st.dataframe(products_df)
-            else:
-                st.subheader("🔐 Bejelentkezés")
-                input_pwd = st.text_input("Adja meg az admin jelszót:", type="password")
+            st.write("Skladové zásoby a správa produktov:")
+            st.dataframe(products_df)
+        else:
+            st.subheader("🔐 Bejelentkezés")
+            input_pwd = st.text_input("Adja meg az admin jelszót:", type="password")
         
             if st.button("Bejelentkezés", type="primary"):
                 if input_pwd == ADMIN_PASSWORD:
