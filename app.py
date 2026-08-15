@@ -549,47 +549,40 @@ def render_checkout_page():
 
                     if "Online bankkártya" in payment_method:
                         try:
-                        # 1. Összeállítjuk a vásárolt tételek listáját a Stripe számára
-                        line_items = []
-                        for item in order_items:
-                            line_items.append({
-                                'price_data': {
-                                 'currency': 'eur',
-                                'product_data': {
-                                    'name': item['name'],
-                                },
-                                'unit_amount': int(round((item['subtotal'] / item['qty']) * 100)), # centben kell megadni (pl. 10.50 € = 1050 cent)
-                              },
-                           'quantity': item['qty'],
-                       })
+                            line_items = []
+                            for item in order_items:
+                                line_items.append({
+                                    'price_data': {
+                                        'currency': 'eur',
+                                        'product_data': {
+                                            'name': item['name'],
+                                        },
+                                        'unit_amount': int(round((item['subtotal'] / item['qty']) * 100)),
+                                    },
+                                    'quantity': item['qty'],
+                                })
 
-                    # 2. Ha van utánvét vagy szállítási plusz költség (opcionális), azt is hozzáadhatod, 
-                    # de sima kártyás fizetésnél a tételek összege adja a vegösszeget.
+                            YOUR_DOMAIN = "https://filipinogoods.streamlit.app"  # <-- A saját Streamlit URL-ed
 
-                    # 3. Létrehozzuk a Stripe Checkout Munkamenetet
-                    # IMPORTANT: A success_url és cancel_url címeket cseréld ki a TE webshopod pontos URL-jére!
-                    YOUR_DOMAIN = "https://filipinogoods.streamlit.app"  # <-- CSERÉLD KI A SAJÁT STREAMLIT DOMAINEDRE
+                            checkout_session = stripe.checkout.Session.create(
+                                payment_method_types=['card'],
+                                line_items=line_items,
+                                mode='payment',
+                                customer_email=email,
+                                success_url=f"{YOUR_DOMAIN}/?payment=success",
+                                cancel_url=f"{YOUR_DOMAIN}/?payment=cancel",
+                            )
 
-                    checkout_session = stripe.checkout.Session.create(
-                        payment_method_types=['card'],
-                        line_items=line_items,
-                        mode='payment',
-                        customer_email=email,
-                        success_url=f"{YOUR_DOMAIN}/?payment=success",
-                        cancel_url=f"{YOUR_DOMAIN}/?payment=cancel",
-                    )
+                            st.info(f"Fizetendő összeg: **{final_total:.2f} €** (≈ **{final_huf:,.0f} HUF**)")
+                            st.link_button(
+                                "🔒 Kattintson ide a biztonságos Stripe bankkártyás fizetéshez ➔", 
+                                checkout_session.url, 
+                                type="primary", 
+                                use_container_width=True
+                            )
+                        except Exception as e:
+                            st.error(f"Hiba történt a Stripe fizetés indítása során: {e}")
 
-                    st.info(f"Fizetendő összeg: **{final_total:.2f} €** (≈ **{final_huf:,.0f} HUF**)")
-
-                    # 4. Gomb, ami átviszi a vásárlót a Stripe biztonságos fizetési oldalára
-                    st.link_button(
-                        "🔒 Kattintson ide a biztonságos Stripe bankkártyás fizetéshez ➔", 
-                        checkout_session.url, 
-                        type="primary", 
-                        use_container_width=True
-                    )
-                except Exception as e:
-                    st.error(f"Hiba történt a Stripe fizetés indítása során: {e}")
                     elif "Banki átutalás" in payment_method:
                         bank_info = load_bank_details()
                         st.warning(
