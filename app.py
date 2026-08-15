@@ -480,6 +480,7 @@ elif st.session_state.current_page == "Admin":
                 if input_pwd == ADMIN_PASSWORD:
                     st.session_state.admin_logged_in = True
                     st.session_state.last_activity = datetime.now()
-                    st.success("Sikeres bejelentkezés!")                    st.rerun()
+                    st.success("Sikeres bejelentkezés!")                    
+                    st.rerun()
                 else:
                     st.error("Hibás jelszó!")
