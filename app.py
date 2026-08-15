@@ -20,9 +20,8 @@ USERS_FILE = 'users.json'
 BANNER_FILE = 'hero_banner.png'
 NO_IMAGE_URL = 'https://via.placeholder.com/300x200?text=No+Image'
 
-# Admin jelszó és inaktivitási időkorlát (10 perc = 600 mp)
-ADMIN_PASSWORD = "admin"  # ⚠️ Itt módosíthatod a saját jelszavadra!
-TIMEOUT_SECONDS = 600
+ADMIN_PASSWORD = "admin"  # ⚠️ Admin jelszó
+TIMEOUT_SECONDS = 600    # 10 perc inaktivitás
 
 if not os.path.exists(INVOICES_DIR):
     os.makedirs(INVOICES_DIR)
@@ -96,7 +95,6 @@ TEXTS = {
         "checkout_title": "📋 Dokončenie objednávky",
         "submit_order": "✅ Odeslať objednávku",
         "back": "⬅️ Späť",
-        # Auth / Account
         "account_title": "👤 Používateľský účet",
         "login_tab": "🔑 Prihlásenie",
         "register_tab": "📝 Registrácia",
@@ -155,7 +153,6 @@ TEXTS = {
         "checkout_title": "📋 Complete Your Order",
         "submit_order": "✅ Place Order",
         "back": "⬅️ Back",
-        # Auth / Account
         "account_title": "👤 User Account",
         "login_tab": "🔑 Login",
         "register_tab": "📝 Register",
@@ -214,7 +211,6 @@ TEXTS = {
         "checkout_title": "📋 Rendelés Befejezése",
         "submit_order": "✅ Rendelés Elküldése",
         "back": "⬅️ Vissza",
-        # Auth / Account
         "account_title": "👤 Felhasználói Fiók",
         "login_tab": "🔑 Bejelentkezés",
         "register_tab": "📝 Regisztráció",
@@ -249,28 +245,28 @@ def clean_price(val):
 def load_products():
     if not os.path.exists(EXCEL_FILE):
         return pd.DataFrame()
-    xls = pd.ExcelFile(EXCEL_FILE)
-    sheet_name = 'Current Stock' if 'Current Stock' in xls.sheet_names else xls.sheet_names[0]
-    df = pd.read_excel(xls, sheet_name=sheet_name)
-    df.columns = [str(col).replace('\n', ' ').strip() for col in df.columns]
-    df = df.dropna(subset=['SKU', 'Product Name']).copy()
-    df['SKU'] = df['SKU'].astype(str).str.strip()
-    
-    selling_col = next((c for c in df.columns if 'selling price' in c.lower()), None)
-    df['Selling Price (€)'] = df[selling_col].apply(clean_price) if selling_col else 0.0
+    try:
+        xls = pd.ExcelFile(EXCEL_FILE)
+        sheet_name = 'Current Stock' if 'Current Stock' in xls.sheet_names else xls.sheet_names[0]
+        df = pd.read_excel(xls, sheet_name=sheet_name)
+        df.columns = [str(col).replace('\n', ' ').strip() for col in df.columns]
+        df = df.dropna(subset=['SKU', 'Product Name']).copy()
+        df['SKU'] = df['SKU'].astype(str).str.strip()
+        
+        selling_col = next((c for c in df.columns if 'selling price' in c.lower()), None)
+        df['Selling Price (€)'] = df[selling_col].apply(clean_price) if selling_col else 0.0
 
-    stock_col = next((c for c in df.columns if any(k in c.lower() for k in ['stock', 'pieces', 'sklad'])), None)
-    df['Current Stock'] = pd.to_numeric(df[stock_col], errors='coerce').fillna(0).astype(int) if stock_col else 0
+        stock_col = next((c for c in df.columns if any(k in c.lower() for k in ['stock', 'pieces', 'sklad'])), None)
+        df['Current Stock'] = pd.to_numeric(df[stock_col], errors='coerce').fillna(0).astype(int) if stock_col else 0
 
-    cat_col = next((c for c in df.columns if any(k in c.lower() for k in ['category', 'kategória', 'kategoria', 'type'])), None)
-    df['Category'] = df[cat_col].astype(str).str.strip() if cat_col else 'General'
+        cat_col = next((c for c in df.columns if any(k in c.lower() for k in ['category', 'kategória', 'kategoria', 'type'])), None)
+        df['Category'] = df[cat_col].astype(str).str.strip() if cat_col else 'General'
 
-    if 'Selling Price' in df.columns:
-        df = df.drop(columns=['Selling Price'])
+        return df
+    except Exception:
+        return pd.DataFrame()
 
-    return df
-
-# Session States
+# Session State Állapotok Inicializálása
 if "cart" not in st.session_state:
     st.session_state.cart = {}
 if "page_view" not in st.session_state:
@@ -289,7 +285,7 @@ if "lang" not in st.session_state:
 df_products = load_products()
 
 # ==========================================
-# 1. NYELVVÁLASZTÓ GOMBOK (LEGÜLÜL, BANNER ELŐTT)
+# 1. NYELVVÁLASZTÓ GOMBOK (LEGÜLÜL)
 # ==========================================
 lang_col1, lang_col2, lang_col3, _ = st.columns([1, 1, 1, 5])
 
@@ -317,7 +313,7 @@ if os.path.exists(BANNER_FILE):
     st.image(BANNER_FILE, use_container_width=True)
 
 # ==========================================
-# 3. MENÜSÁV
+# 3. NAVIGÁCIÓS MENÜSÁV
 # ==========================================
 nav_options = [
     t["nav_home"],
@@ -341,7 +337,7 @@ st.divider()
 
 def display_product_grid(products_df):
     if products_df.empty:
-        st.info("No products found.")
+        st.info("Žiadne produkty neboli nájdené.")
         return
 
     cols = st.columns(3)
@@ -370,7 +366,7 @@ def display_product_grid(products_df):
                 )
                 if st.button(t['add_to_cart'], key=f"btn_{sku}"):
                     st.session_state.cart[sku] = st.session_state.cart.get(sku, 0) + quantity
-                    st.success(f"Added! ({quantity}x)")
+                    st.success(f"Pridané! ({quantity}x)")
             else:
                 st.error(t['out_of_stock'])
             st.divider()
@@ -429,7 +425,7 @@ if st.session_state.page_view == "checkout":
                 p_price = float(p_row['Selling Price (€)'])
                 total_p = p_price * qty
                 grand_total += total_p
-                cart_items.append({"sku": sku, "nev": p_name, "ar": p_price, "ks": qty, "spolu": total_p})
+                cart_items.append({"SKU": sku, "Názov/Name": p_name, "Cena/Price (€)": p_price, "Ks/Qty": qty, "Spolu/Total (€)": total_p})
 
         summary_df = pd.DataFrame(cart_items)
         st.dataframe(summary_df, use_container_width=True, hide_index=True)
@@ -438,7 +434,6 @@ if st.session_state.page_view == "checkout":
         st.divider()
         st.subheader(t["cust_details"])
 
-        # Alapértelmezett adatok a bejelentkezett felhasználótól
         u_info = st.session_state.current_user if st.session_state.user_logged_in else {}
 
         with st.form("checkout_form"):
@@ -453,7 +448,7 @@ if st.session_state.page_view == "checkout":
                 if not c_name or not c_email or not c_address:
                     st.error(t["fill_all_fields"])
                 else:
-                    st.success("🎉 Köszönjük a rendelést! A visszaigazolást elküldük e-mailben.")
+                    st.success("🎉 Ďakujeme za objednávku! / Köszönjük a rendelést!")
                     st.session_state.cart = {}
 
 else:
@@ -491,7 +486,7 @@ else:
         filtered_df = df_products[
             df_products['Product Name'].str.contains(search_query, case=False, na=False) |
             df_products['SKU'].str.contains(search_query, case=False, na=False)
-        ] if search_query else df_products
+        ] if search_query and not df_products.empty else df_products
 
         display_product_grid(filtered_df)
         display_cart_section()
@@ -499,7 +494,7 @@ else:
     # 3. 📂 CATEGORIES
     elif selected_page == t["nav_categories"]:
         st.title(t["nav_categories"])
-        cats = [t["cat_all"]] + sorted(list(df_products['Category'].unique()))
+        cats = [t["cat_all"]] + (sorted(list(df_products['Category'].unique())) if not df_products.empty else [])
         selected_cat = st.selectbox(t["category_select"], cats)
         filtered_df = df_products if selected_cat == t["cat_all"] else df_products[df_products['Category'] == selected_cat]
         display_product_grid(filtered_df)
@@ -545,7 +540,6 @@ else:
         else:
             auth_tab1, auth_tab2 = st.tabs([t["login_tab"], t["register_tab"]])
 
-            # BEJELENTKEZÉS TAB
             with auth_tab1:
                 st.subheader(t["login_tab"])
                 l_email = st.text_input(t["email_ph"], key="login_email").lower().strip()
@@ -560,7 +554,6 @@ else:
                     else:
                         st.error(t["login_error"])
 
-            # REGISZTRÁCIÓ TAB
             with auth_tab2:
                 st.subheader(t["register_tab"])
                 r_name = st.text_input(t["name_ph"], key="reg_name")
@@ -585,20 +578,18 @@ else:
                         save_users(users_db)
                         st.success(t["reg_success"])
 
-    # 7. ⚙️ ADMIN (JELSZÓ + 10 PERCES TIMEOUT)
+    # 7. ⚙️ ADMIN
     elif selected_page == t["nav_admin"]:
         st.title("⚙️ Adminisztrációs Felület")
 
-        # Inaktivitás ellenőrzése
         if st.session_state.admin_logged_in:
             if "last_activity" in st.session_state:
                 elapsed_time = (datetime.now() - st.session_state.last_activity).total_seconds()
                 if elapsed_time > TIMEOUT_SECONDS:
                     st.session_state.admin_logged_in = False
-                    st.warning("⚠️ A munkamenet inaktivitás miatt lejárt (10 perc). Kérjük, jelentkezzen be újra!")
+                    st.warning("⚠️ Munkamenet inaktivitás miatt lejárt (10 perc). Kérjük, jelentkezzen be újra!")
                     st.rerun()
 
-        # Ha be van jelentkezve és aktív
         if st.session_state.admin_logged_in:
             st.session_state.last_activity = datetime.now()
 
@@ -614,8 +605,7 @@ else:
             st.dataframe(df_products, use_container_width=True)
 
         else:
-            # Bejelentkezési űrlap
-            st.subheader("🔐 Bejelentkezés")
+            st.subheader("🔐 Admin Bejelentkezés")
             input_pwd = st.text_input("Adja meg az admin jelszót:", type="password")
             
             if st.button("Bejelentkezés", type="primary"):
@@ -626,192 +616,3 @@ else:
                     st.rerun()
                 else:
                     st.error("Hibás jelszó!")
-    st.session_state.df_inventory, st.session_state.df_sales = load_initial_data()
-
-df_inv = st.session_state.df_inventory
-df_sales = st.session_state.df_sales
-
-# --- OLDALSÁV (NAVIGATION) ---
-st.sidebar.title("🇵🇭 Filipino Goods")
-st.sidebar.subheader("Management System")
-page = st.sidebar.radio("Navigáció", ["Dashboard", "Készletkezelő (Inventory)", "Új Eladás / Faktúra", "Értékesítési Előzmények"])
-
-# --- 1. DASHBOARD ---
-if page == "Dashboard":
-    st.title("📊 Vezetői Műszerfal (Dashboard)")
-    
-    # KPI-k
-    total_items = len(df_inv)
-    total_stock_value = (df_inv["Current Stock"] * df_inv["Unit Price (€)"]).sum()
-    total_sales_val = df_sales["Total Price"].sum() if not df_sales.empty else 0.0
-    low_stock_items = len(df_inv[df_inv["Current Stock"] <= 5])
-    
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Termékek száma", f"{total_items} db")
-    col2.metric("Készletérték (Beszerzés)", f"€{total_stock_value:.2f}")
-    col3.metric("Összes Értékesítés", f"€{total_sales_val:.2f}")
-    col4.metric("Alacsony készlet (≤ 5)", f"{low_stock_items} db", delta_color="inverse")
-    
-    st.markdown("---")
-    
-    col_left, col_right = st.columns(2)
-    with col_left:
-        st.subheader("📦 Készlet Kategóriánként")
-        cat_stock = df_inv.groupby("Category")["Current Stock"].sum().reset_index()
-        st.bar_chart(cat_stock.set_index("Category"))
-        
-    with col_right:
-        st.subheader("⚠️ Alacsony Készlet Figyelmeztetések")
-        low_stock_df = df_inv[df_inv["Current Stock"] <= 5][["SKU", "Product Name", "Current Stock", "Supplier"]]
-        if not low_stock_df.empty:
-            st.dataframe(low_stock_df, use_container_width=True, hide_index=True)
-        else:
-            st.success("Minden termékből megfelelő mennyiség áll rendelkezésre!")
-
-# --- 2. KÉSZLETKEZELŐ ---
-elif page == "Készletkezelő (Inventory)":
-    st.title("📦 Készletkezelés és Termékek")
-    
-    # Szűrők
-    st.subheader("Szűrés és Keresés")
-    col_s1, col_s2 = st.columns([2, 1])
-    search_term = col_s1.text_input("Keresés terméknév vagy SKU alapján:", "")
-    category_filter = col_s2.selectbox("Kategória szűrő:", ["Összes"] + list(df_inv["Category"].unique()))
-    
-    filtered_df = df_inv.copy()
-    if search_term:
-        filtered_df = filtered_df[
-            filtered_df["Product Name"].str.contains(search_term, case=False, na=False) |
-            filtered_df["SKU"].str.contains(search_term, case=False, na=False)
-        ]
-    if category_filter != "Összes":
-        filtered_df = filtered_df[filtered_df["Category"] == category_filter]
-        
-    # Stock Value számított oszlop frissítése
-    filtered_df["Stock Value (€)"] = filtered_df["Current Stock"] * filtered_df["Unit Price (€)"]
-    
-    st.dataframe(filtered_df, use_container_width=True, hide_index=True)
-    
-    st.markdown("---")
-    st.subheader("➕ Új Termék Hozzáadása")
-    with st.form("add_product_form"):
-        f_sku = st.text_input("SKU")
-        f_name = st.text_input("Termék neve")
-        f_cat = st.selectbox("Kategória", list(df_inv["Category"].unique()))
-        f_sup = st.text_input("Beszállító", "Beagley Copperman")
-        f_qty = st.number_input("Kezdő Készlet", min_value=0, value=10)
-        f_buy_price = st.number_input("Beszerzési Ár (€)", min_value=0.0, value=1.0, step=0.01)
-        f_sell_price = st.number_input("Eladási Ár (€)", min_value=0.0, value=2.0, step=0.01)
-        
-        submitted = st.form_submit_button("Termék Mentése")
-        if submitted:
-            if f_sku and f_name:
-                new_row = {
-                    "SKU": f_sku,
-                    "Product Name": f_name,
-                    "Category": f_cat,
-                    "Supplier": f_sup,
-                    "Arrival date": datetime.date.today().strftime("%d. %m. %Y"),
-                    "Starting Stock": f_qty,
-                    "Total Received": 0,
-                    "Total Sold": 0,
-                    "Current Stock": f_qty,
-                    "Unit Price (€)": f_buy_price,
-                    "Selling Price (€)": f_sell_price
-                }
-                st.session_state.df_inventory = pd.concat([st.session_state.df_inventory, pd.DataFrame([new_row])], ignore_index=True)
-                st.success(f"Termék sikeresen hozzáadva: {f_name}")
-                st.rerun()
-            else:
-                st.error("Kérjük, töltse ki az SKU és Terméknév mezőket!")
-
-# --- 3. ÚJ ELADÁS / FAKTÚRA ---
-elif page == "Új Eladás / Faktúra":
-    st.title("🧾 Új Eladás Rögzítése / Faktúra Generáló")
-    
-    col_cust1, col_cust2 = st.columns(2)
-    inv_num = col_cust1.text_input("Faktúra / Számla száma", f"20260800{len(st.session_state.df_sales)+1}")
-    customer_name = col_cust2.text_input("Vevő Neve", "Franz Martin Clarin")
-    
-    st.subheader("Poloatkok / Tételek kiválasztása")
-    
-    if "cart" not in st.session_state:
-        st.session_state.cart = []
-        
-    with st.form("add_to_cart_form"):
-        c_prod = st.selectbox("Termék kiválasztása", df_inv["Product Name"].tolist())
-        c_qty = st.number_input("Mennyiség", min_value=1, value=1)
-        add_item = st.form_submit_button("Tétel Hozzáadása a Kosárhoz")
-        
-        if add_item:
-            prod_row = df_inv[df_inv["Product Name"] == c_prod].iloc[0]
-            unit_price = prod_row["Selling Price (€)"]
-            avail_stock = prod_row["Current Stock"]
-            
-            if c_qty > avail_stock:
-                st.error(f"Nincs elegendő készlet! Elérhető: {avail_stock} db")
-            else:
-                st.session_state.cart.append({
-                    "Product Name": c_prod,
-                    "SKU": prod_row["SKU"],
-                    "Qty": c_qty,
-                    "Unit Price (€)": unit_price,
-                    "Total (€)": round(unit_price * c_qty, 2)
-                })
-                st.success(f"Hozzáadva: {c_prod} ({c_qty} db)")
-
-    # Kosár megjelenítése
-    if st.session_state.cart:
-        st.subheader("🛒 Jelenlegi Kosár")
-        df_cart = pd.DataFrame(st.session_state.cart)
-        st.dataframe(df_cart, use_container_width=True, hide_index=True)
-        
-        grand_total = df_cart["Total (€)"].sum()
-        st.markdown(f"### **Végösszeg: €{grand_total:.2f}**")
-        
-        col_b1, col_b2 = st.columns([1, 4])
-        if col_b1.button("Tranzakció Véglegesítése"):
-            # Frissítjük a készletet és elmentjük a tranzakciót
-            for item in st.session_state.cart:
-                # Készlet levonás
-                idx = st.session_state.df_inventory[st.session_state.df_inventory["Product Name"] == item["Product Name"]].index[0]
-                st.session_state.df_inventory.at[idx, "Current Stock"] -= item["Qty"]
-                st.session_state.df_inventory.at[idx, "Total Sold"] += item["Qty"]
-                
-                # Értékesítési rekord
-                new_sale = {
-                    "Invoice No": inv_num,
-                    "Customer": customer_name,
-                    "Date": datetime.date.today().strftime("%Y-%m-%d"),
-                    "Item": item["Product Name"],
-                    "Qty": item["Qty"],
-                    "Unit Price": item["Unit Price (€)"],
-                    "Total Price": item["Total (€)"]
-                }
-                st.session_state.df_sales = pd.concat([st.session_state.df_sales, pd.DataFrame([new_sale])], ignore_index=True)
-            
-            st.session_state.cart = []
-            st.balloons()
-            st.success("Sikeres értékesítés! A készlet frissült.")
-            st.rerun()
-            
-        if col_b2.button("Kosár Ürítése"):
-            st.session_state.cart = []
-            st.rerun()
-
-# --- 4. ÉRTÉKESÍTÉSI ELŐZMÉNYEK ---
-elif page == "Értékesítési Előzmények":
-    st.title("📋 Értékesítési Előzmények")
-    
-    if not df_sales.empty:
-        st.dataframe(df_sales, use_container_width=True, hide_index=True)
-        
-        csv_data = df_sales.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            label="Értékesítések Letöltése CSV-ként",
-            data=csv_data,
-            file_name=f"filipino_goods_sales_{datetime.date.today()}.csv",
-            mime="text/csv"
-        )
-    else:
-        st.info("Még nem található értékesítési rekord.")
