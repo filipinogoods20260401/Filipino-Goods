@@ -797,7 +797,7 @@ elif current_p == "admin":
             st.rerun()
             
         st.divider()
-        admin_tab1, admin_tab2 = st.tabs(["📦 Raktárkészlet", "📑 Rendelések & Faktúrák"])
+        admin_tab1, admin_tab2, admin_tab3 = st.tabs(["📦 Raktárkészlet", "📑 Rendelések & Faktúrák", "⚙️ Banki adatok"])
         
         with admin_tab1:
             st.subheader("📊 Raktárkészlet kezelése")
@@ -844,7 +844,22 @@ elif current_p == "admin":
                             file_name=f"faktura_{ord_data['id']}.pdf",
                             mime="application/pdf",
                             key=f"dl_pdf_{ord_data['id']}"
-                        )
+                )
+
+        with admin_tab3:
+        st.subheader("🏦 Banki utalási adatok módosítása")
+        current_bank = load_bank_details()
+            
+        with st.form("bank_details_form"):
+            new_iban = st.text_input("IBAN számlaszám", value=current_bank.get("iban", ""))
+            new_swift = st.text_input("SWIFT / BIC kód", value=current_bank.get("swift", ""))
+                
+            save_bank_btn = st.form_submit_button("💾 Banki adatok mentése", type="primary")
+                
+            if save_bank_btn:
+                save_bank_details({"iban": new_iban, "swift": new_swift})
+                st.success("A banki adatok sikeresen frissültek!")
+                st.rerun()
 
 # --- BEJELENTKEZÉS ÉS PROFIL (OLDALSÁV / SIDEBAR) ---
 with st.sidebar:
