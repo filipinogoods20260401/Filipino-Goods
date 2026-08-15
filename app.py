@@ -481,7 +481,7 @@ def render_checkout_page():
             payment_method = st.radio(
                 "Válasszon fizetési opciót:",
                 [
-                    "💳 Online bankkártya (Barion / GP webpay)",
+                     "💳 Online bankkártya (Stripe)", # Barion / GP webpay helyett Stripe
                     "🏦 Banki átutalás (SEPA / Díjmentes)",
                     "🚚 Utánvét (+1.50 €)"
                 ],
