@@ -310,6 +310,17 @@ def save_users(users):
     with open(USERS_FILE, "w", encoding="utf-8") as f:
         json.dump(users, f, ensure_ascii=False, indent=4)
 
+@st.cache_data(ttl=3600)  # 1 óránként frissíti az árfolyamot
+def get_eur_huf_rate():
+    try:
+        url = "https://open.er-api.com/v6/latest/EUR"
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req) as response:
+            data = json.loads(response.read().decode())
+            return float(data["rates"]["HUF"])
+    except Exception:
+        return 400.0  # Tartalék árfolyam, ha a hálózati kérés nem sikerülne
+
 def get_product_image(sku):
     extensions = [".jpg", ".png", ".jpeg", ".webp"]
     for ext in extensions:
@@ -317,6 +328,8 @@ def get_product_image(sku):
         if os.path.exists(img_path):
             return img_path
     return "https://via.placeholder.com/200?text=No+Image"
+
+import urllib.request
 
 # --- RÁCS MEGJELENÍTŐ FÜGGVÉNY ---
 def display_product_grid(df_to_show):
@@ -374,6 +387,8 @@ def display_product_grid(df_to_show):
                 
                 st.caption(f"SKU: `{sku}`")
                 st.write(f"**{t['price']}:** {p_price:.2f} €")
+                st.caption(f"≈ {p_huf:,.0f} HUF".replace(",", " "))
+                st.caption(f"*(1 EUR = {eur_huf:.2f} HUF)*")
                 st.write(f"**{t['stock']}:** {p_stock} ks")
                 
                 q_col, b_col = st.columns([1, 2.2])
