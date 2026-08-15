@@ -185,7 +185,12 @@ def load_products():
     cat_col = next((c for c in df.columns if any(k in c.lower() for k in ['category', 'kategória', 'kategoria', 'type'])), None)
     df['Category'] = df[cat_col].astype(str).str.strip() if cat_col else 'General'
 
+    # --- JOBBRÓL A NEGYEDIK OSZLOP (ELSO "Selling Price") ELTÁVOLÍTÁSA ---
+    if 'Selling Price' in df.columns:
+        df = df.drop(columns=['Selling Price'])
+
     return df
+
 
 # Session States
 if "cart" not in st.session_state:
