@@ -452,62 +452,59 @@ def render_checkout_page():
             st.session_state.current_page = "home"
             st.rerun()
     else:
+        # Tétel törlése a kosárból (ha a törlés gombra kattintottak)
+        if "delete_sku" in st.session_state:
+            sku_to_delete = st.session_state.delete_sku
+            if sku_to_delete in st.session_state.cart:
+                del st.session_state.cart[sku_to_delete]
+            del st.session_state.delete_sku
+            st.rerun()
+
+        # Kosár elemeinek összeállítása és végösszeg számítása
         cart_total = 0.0
-        for sku, qty in st.session_state.cart.items():
-            product_row = products_df[products_df["SKU"].astype(str) == str(sku)]
-            if not product_row.empty:
-                p_price = float(product_row.iloc[0]["Selling Price (€)"])
-                cart_total += p_price * qty
-
-        eur_huf = get_eur_huf_rate()
-        cart_huf = cart_total * eur_huf
-
-    st.subheader("📋 Rendelés áttekintése / Prehľad objednávky")
-
-    # Tétel törlése a kosárból (ha a gombra kattintottak)
-    if "delete_sku" in st.session_state:
-        sku_to_delete = st.session_state.delete_sku
-             if sku_to_delete in st.session_state.cart:
-            del st.session_state.cart[sku_to_delete]
-          del st.session_state.delete_sku
-          st.rerun()
+        order_items = []
         
-     # Tételek kilistázása gombokkal
-     for item in order_items:
-        sku = item['sku']
-           col_name, col_qty, col_price, col_del = st.columns([4, 2, 2, 1])
-    
-           with col_name:
-             st.write(f"**{item['name']}**  \n*(SKU: `{sku}`)*")
-        
-         with col_qty:
-             st.write(f"{item['qty']} ks × {item['subtotal']/item['qty']:.2f} €")
-        
-           with col_price:
-               st.write(f"**{item['subtotal']:.2f} €**")
-        
-         with col_del:
-            if st.button("🗑️", key=f"del_{sku}"):
-                 st.session_state.delete_sku = sku
-                  st.rerun()
-
-            st.divider()
         for sku, qty in list(st.session_state.cart.items()):
             product_row = products_df[products_df["SKU"].astype(str) == str(sku)]
             if not product_row.empty:
                 p_name = product_row.iloc[0]["Product Name"]
                 p_price = float(product_row.iloc[0]["Selling Price (€)"])
                 subtotal = p_price * qty
+                cart_total += subtotal
+                order_items.append({
+                    "sku": str(sku),
+                    "name": p_name,
+                    "qty": qty,
+                    "subtotal": subtotal,
+                    "price": p_price
+                })
+
+        eur_huf = get_eur_huf_rate()
+        cart_huf = cart_total * eur_huf
+
+        st.subheader("📋 Rendelés áttekintése / Prehľad objednávky")
+
+        # Tételek kirajzolása törlés gombbal
+        for item in order_items:
+            sku = item['sku']
+            col_name, col_qty, col_price, col_del = st.columns([4, 2, 2, 1])
+            
+            with col_name:
+                st.write(f"**{item['name']}**  \n*(SKU: `{sku}`)*")
                 
-                col_p1, col_p2, col_p3 = st.columns([3, 1, 1])
-                with col_p1:
-                    st.write(f"**{p_name}** (SKU: `{sku}`)")
-                with col_p2:
-                    st.write(f"{qty} ks × {p_price:.2f} €")
-                with col_p3:
-                    st.write(f"**{subtotal:.2f} €**")
-        
-        st.divider()
+            with col_qty:
+                st.write(f"{item['qty']} ks × {item['price']:.2f} €")
+                
+            with col_price:
+                st.write(f"**{item['subtotal']:.2f} €**")
+                
+            with col_del:
+                if st.button("🗑️", key=f"del_{sku}"):
+                    st.session_state.delete_sku = sku
+                    st.rerun()
+
+            st.divider()
+
         st.markdown(f"### **Összesen / Spolu: {cart_total:.2f} €**")
         st.caption(f"≈ {cart_huf:,.0f} HUF".replace(",", " "))
         st.caption(f"*(1 EUR = {eur_huf:.2f} HUF)*")
@@ -537,7 +534,7 @@ def render_checkout_page():
             payment_method = st.radio(
                 "Válasszon fizetési opciót:",
                 [
-                     "💳 Online bankkártya (Stripe)", # Barion / GP webpay helyett Stripe
+                    "💳 Online bankkártya (Stripe)",
                     "🏦 Banki átutalás (SEPA / Díjmentes)",
                     "🚚 Utánvét (+1.50 €)"
                 ],
@@ -556,6 +553,7 @@ def render_checkout_page():
                     final_total = cart_total + cod_fee
                     final_huf = final_total * eur_huf
 
+                    # Készlet levonása
                     for sku, qty in st.session_state.cart.items():
                         idx = products_df[products_df["SKU"].astype(str) == str(sku)].index
                         if not idx.empty:
@@ -570,20 +568,7 @@ def render_checkout_page():
                     except Exception:
                         pass
 
-                    # Új rendelés adatainak összeállítása és elmentése
-                    order_items = []
-                    for sku, qty in st.session_state.cart.items():
-                        p_row = products_df[products_df["SKU"].astype(str) == str(sku)]
-                        if not p_row.empty:
-                            p_name = p_row.iloc[0]["Product Name"]
-                            p_price = float(p_row.iloc[0]["Selling Price (€)"])
-                            order_items.append({
-                                "sku": str(sku),
-                                "name": p_name,
-                                "qty": qty,
-                                "subtotal": p_price * qty
-                            })
-
+                    # Rendelés elmentése
                     new_order = {
                         "id": f"ORD-{len(load_orders()) + 1001}",
                         "date": pd.Timestamp.now().strftime("%Y-%m-%d %H:%M"),
@@ -599,6 +584,9 @@ def render_checkout_page():
                     }
                     save_order(new_order)
 
+                    # Kosár kiürítése sikeres rendelés után
+                    st.session_state.cart = {}
+
                     st.success("A rendelés sikeresen rögzítve! / Objednávka bola úspešne vytvorená!")
                     st.divider()
                     st.subheader("💳 Fizetési információk / Informácie k platbe")
@@ -613,12 +601,23 @@ def render_checkout_page():
                                         'product_data': {
                                             'name': item['name'],
                                         },
-                                        'unit_amount': int(round((item['subtotal'] / item['qty']) * 100)),
+                                        'unit_amount': int(round(item['price'] * 100)),
                                     },
                                     'quantity': item['qty'],
                                 })
 
-                            YOUR_DOMAIN = "https://filipinogoods.streamlit.app"  # <-- A saját Streamlit URL-ed
+                            # Ha van utánvéti díj, hozzáadjuk a Stripe tételekhez is
+                            if cod_fee > 0:
+                                line_items.append({
+                                    'price_data': {
+                                        'currency': 'eur',
+                                        'product_data': {'name': 'Utánvét kezelési díj / Poplatok za dobierku'},
+                                        'unit_amount': int(round(cod_fee * 100)),
+                                    },
+                                    'quantity': 1,
+                                })
+
+                            YOUR_DOMAIN = "https://filipinogoods.streamlit.app"
 
                             checkout_session = stripe.checkout.Session.create(
                                 payment_method_types=['card'],
@@ -652,21 +651,11 @@ def render_checkout_page():
                     else:
                         st.info(f"🚚 A rendelés összegét (**{final_total:.2f} €** / ≈ **{final_huf:,.0f} HUF**) a futárnak tudja kifizetni átvételkor készpénzzel vagy kártyával.")
 
-                    st.session_state.cart = {}
-
         if st.button("⬅️ Vissza a vásárláshoz", key="btn_back_checkout_bottom"):
             st.session_state.show_checkout = False
             st.session_state.page = "home"
             st.session_state.current_page = "home"
             st.rerun()
-
-def get_product_image(sku):
-    extensions = [".jpg", ".png", ".jpeg", ".webp"]
-    for ext in extensions:
-        img_path = os.path.join("images", f"{sku}{ext}")
-        if os.path.exists(img_path):
-            return img_path
-    return "https://via.placeholder.com/200?text=No+Image"
 
 # --- RÁCS MEGJELENÍTŐ FÜGGVÉNY ---
 def display_product_grid(df_to_show):
