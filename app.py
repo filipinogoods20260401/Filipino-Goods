@@ -513,19 +513,51 @@ if st.session_state.page_view == "checkout":
                     st.session_state.cart = {}
 
 else:
-    # 1. 🏠 HOME
+    # 1. 🏠 HOME (FŐOLDAL)
     if page == t["nav_home"]:
-        col1, col2 = st.columns([1, 4])
-        with col1:
-            if os.path.exists(LOGO_FILE):
-                st.image(LOGO_FILE, width=150)
-        with col2:
-            st.title(t["welcome_title"])
-            st.caption(t["welcome_sub"])
+        # Tetején fejléc / Banner
+        st.markdown(
+            """
+            <div style="background-color: #f8f9fa; padding: 25px; border-radius: 10px; border-left: 5px solid #d9534f; margin-bottom: 20px;">
+                <h1 style="color: #2c3e50; margin: 0;">🇵🇭 Filipino Goods Online Shop</h1>
+                <p style="font-size: 18px; color: #555; margin-top: 10px;">
+                    Eredeti filippínó élelmiszerek és prémium alapanyagok közvetlenül az Ön otthonába!
+                </p>
+            </div>
+            """, 
+            unsafe_allow_html=True
+        )
+
+        # Vásárlási előnyök blokk (Ikonsor)
+        col_b1, col_b2, col_b3 = st.columns(3)
+        with col_b1:
+            st.success("🚚 **Gyors Szállítás**\n\n2-4 munkanapon belül, 50 € felett ingyenes!")
+        with col_b2:
+            st.info("💯 **100% Autentikus**\n\nKözvetlenül a legnépszerűbb márkáktól.")
+        with col_b3:
+            st.warning("💳 **Biztonságos Fizetés**\n\nBanki átutalás vagy utánvét.")
 
         st.divider()
+
+        # Kategória Gyorsválasztó (Kártyák)
+        st.subheader("📂 Népszerű Kategóriák")
+        
+        categories = list(df_products['Category'].unique()) if 'Category' in df_products.columns else []
+        if categories:
+            cat_cols = st.columns(min(len(categories), 4))
+            for i, cat_name in enumerate(categories[:4]):
+                with cat_cols[i % 4]:
+                    st.markdown(f"#### {cat_name}")
+                    if st.button(f"Megtekintés ➡️", key=f"cat_btn_{i}", use_container_width=True):
+                        # Átirányítás a kategóriák oldalra
+                        st.session_state.selected_category = cat_name
+                        st.info(f"Szűrés erre: **{cat_name}** (Válts a Kategóriák menüre!)")
+
+        st.divider()
+
+        # Kiemelt Termékek
         st.subheader(t["featured_title"])
-        display_product_grid(df_products.head(3))
+        display_product_grid(df_products.head(6))  # 3 helyett most 6 terméket mutatunk
         display_sidebar_cart()
 
     # 2. 📦 PRODUCTS
