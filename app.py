@@ -18,15 +18,13 @@ LOGO_FILE = 'logo.png'
 BANNER_FILE = 'hero_banner.png'
 NO_IMAGE_URL = 'https://via.placeholder.com/300x200?text=No+Image'
 
-# Admin jelszó és inaktivitási időkorlát (10 perc = 600 mp)
-ADMIN_PASSWORD = "admin"  # ⚠️ Itt módosíthatod a saját jelszavadra!
+# Admin jelszó lekérése Secrets-ből (Fallback: "admin")
+ADMIN_PASSWORD = st.secrets.get("ADMIN_PASSWORD", "admin")
 TIMEOUT_SECONDS = 600
 
-if not os.path.exists(INVOICES_DIR):
-    os.makedirs(INVOICES_DIR)
-
-if not os.path.exists(IMAGES_DIR):
-    os.makedirs(IMAGES_DIR)
+# Mappák létrehozása
+os.makedirs(INVOICES_DIR, exist_ok=True)
+os.makedirs(IMAGES_DIR, exist_ok=True)
 
 def get_product_image(sku):
     sku_str = str(sku).strip()
@@ -56,7 +54,7 @@ TEXTS = {
         "add_to_cart": "🛒 Do košíka",
         "remove": "❌ Odstrániť",
         "stock": "Skladom",
-        "out_of_stock": "Vyprodané",
+        "out_of_stock": "Vypredané",
         "price": "Cena",
         "qty": "Množstvo",
         "total": "Spolu",
@@ -74,7 +72,7 @@ TEXTS = {
         "payment_text": "- **Bankový prevod:** Na základe vygenerovanej zálohovej faktúry.\n- **Dobierka:** Platba pri prevzatí (+1.50 €).",
         "privacy_text": "Vaše osobné údaje používame výhradne na spracovanie a doručenie vašej objednávky.",
         "checkout_title": "📋 Dokončenie objednávky",
-        "submit_order": "✅ Odeslať objednávku",
+        "submit_order": "✅ Odoslať objednávku",
         "back": "⬅️ Späť"
     },
     "EN": {
@@ -186,13 +184,12 @@ def load_products():
     cat_col = next((c for c in df.columns if any(k in c.lower() for k in ['category', 'kategória', 'kategoria', 'type'])), None)
     df['Category'] = df[cat_col].astype(str).str.strip() if cat_col else 'General'
 
-    # Sima 'Selling Price' oszlop eltávolítása (jobbról a 4. oszlop)
     if 'Selling Price' in df.columns:
         df = df.drop(columns=['Selling Price'])
 
     return df
 
-# Session States
+# Session States Inicializálása
 if "cart" not in st.session_state:
     st.session_state.cart = {}
 if "page_view" not in st.session_state:
@@ -204,15 +201,11 @@ if "admin_logged_in" not in st.session_state:
 
 df_products = load_products()
 
-# ==========================================
-# 1. LEGÜLÜL: HERO BANNER
-# ==========================================
+# --- HERO BANNER ---
 if os.path.exists(BANNER_FILE):
-    st.image(BANNER_FILE, use_container_width=True)
+    st.image(BANNER_FILE, use_column_width=True)
 
-# ==========================================
-# 2. FEJLÉC (LOGO ÉS NYELVVÁLASZTÓ)
-# ==========================================
+# --- FEJLÉC ---
 head_col1, head_col2, head_col3 = st.columns([1, 3, 1])
 
 with head_col1:
@@ -228,7 +221,7 @@ with head_col3:
         lang_code = "HU"
     t = TEXTS[lang_code]
 
-# MENÜSÁV
+# --- NAVIGÁCIÓS MENÜ ---
 nav_options = [
     t["nav_home"],
     t["nav_products"],
@@ -242,7 +235,8 @@ selected_page = st.radio(
     "", 
     nav_options, 
     index=st.session_state.current_page_idx, 
-    horizontal=True
+    horizontal=True,
+    key="nav_radio"
 )
 
 st.session_state.current_page_idx = nav_options.index(selected_page)
@@ -263,7 +257,7 @@ def display_product_grid(products_df):
         img_src = get_product_image(sku)
 
         with cols[col_idx]:
-            st.image(img_src, use_container_width=True)
+            st.image(img_src, use_column_width=True)
             st.markdown(f"### {p_name}")
             st.info(f"🔑 **SKU:** `{sku}`")
             st.write(f"💶 **{t['price']}:** {p_price:.2f} €")
@@ -279,13 +273,15 @@ def display_product_grid(products_df):
                 )
                 if st.button(t['add_to_cart'], key=f"btn_{sku}"):
                     st.session_state.cart[sku] = st.session_state.cart.get(sku, 0) + quantity
-                    st.success(f"Added! ({quantity}x)")
+                    st.toast(f"✅ Dodané do košíka! ({quantity}x {p_name})")
+                    st.rerun()
             else:
                 st.error(t['out_of_stock'])
             st.divider()
 
 def display_cart_section():
-    with st.expander(f"🛒 {t['cart_title']} ({sum(st.session_state.cart.values())} termék)", expanded=bool(st.session_state.cart)):
+    total_items = sum(st.session_state.cart.values())
+    with st.expander(f"🛒 {t['cart_title']} ({total_items} termék)", expanded=bool(st.session_state.cart)):
         if not st.session_state.cart:
             st.info(t['cart_empty'])
         else:
@@ -314,10 +310,7 @@ def display_cart_section():
                 st.session_state.page_view = "checkout"
                 st.rerun()
 
-# ==========================================
-# OLDALAK MEGJELENÍTÉSE
-# ==========================================
-
+# --- OLDALAK MEGJELENÍTÉSE ---
 if st.session_state.page_view == "checkout":
     if st.button(t['back']):
         st.session_state.page_view = "shop"
@@ -338,11 +331,17 @@ if st.session_state.page_view == "checkout":
                 p_price = float(p_row['Selling Price (€)'])
                 total_p = p_price * qty
                 grand_total += total_p
-                cart_items.append({"sku": sku, "nev": p_name, "ar": p_price, "ks": qty, "spolu": total_p})
+                cart_items.append({"SKU": sku, "Názov": p_name, "Cena (€)": p_price, "Množstvo": qty, "Spolu (€)": total_p})
 
         summary_df = pd.DataFrame(cart_items)
-        st.dataframe(summary_df, use_container_width=True, hide_index=True)
+        st.dataframe(summary_df, use_column_width=True, hide_index=True)
         st.markdown(f"### **{t['total']}: {grand_total:.2f} €**")
+        
+        # Rendelés befejezése gomb (példa)
+        if st.button(t['submit_order'], type="primary"):
+            st.balloons()
+            st.success("Objednávka bola úspešne odoslaná! / Order placed successfully!")
+            st.session_state.cart = {}
 
 else:
     # 1. 🏠 HOME
@@ -413,7 +412,7 @@ else:
             st.markdown(t["privacy_text"])
         display_cart_section()
 
-    # 6. ⚙️ ADMIN (JELSZÓ + 10 PERCES TIMEOUT)
+    # 6. ⚙️ ADMIN
     elif selected_page == t["nav_admin"]:
         st.title("⚙️ Adminisztrációs Felület")
 
@@ -426,7 +425,6 @@ else:
                     st.warning("⚠️ A munkamenet inaktivitás miatt lejárt (10 perc). Kérjük, jelentkezzen be újra!")
                     st.rerun()
 
-        # Ha be van jelentkezve és aktív
         if st.session_state.admin_logged_in:
             st.session_state.last_activity = datetime.now()
 
@@ -439,10 +437,9 @@ else:
                     st.rerun()
 
             st.divider()
-            st.dataframe(df_products, use_container_width=True)
+            st.dataframe(df_products, use_column_width=True)
 
         else:
-            # Bejelentkezési űrlap
             st.subheader("🔐 Bejelentkezés")
             input_pwd = st.text_input("Adja meg az admin jelszót:", type="password")
             
