@@ -290,7 +290,17 @@ def display_product_grid(products_df):
 
         with cols[col_idx]:
             st.image(img_src, use_container_width=True)
-            st.markdown(f"#### {p_name}")
+            
+            # --- FIX MAGASSÁGÚ CÍM DOBOZ (A teljes név megmarad, a gombok egy vonalba kerülnek) ---
+            st.markdown(
+                f"""
+                <div style="height: 75px; overflow-y: auto; margin-bottom: 8px;">
+                    <h4 style="margin: 0; font-size: 1rem; line-height: 1.25;">{p_name}</h4>
+                </div>
+                """, 
+                unsafe_allow_html=True
+            )
+            
             st.caption(f"SKU: `{sku}`")
             st.write(f"**{t['price']}:** {p_price:.2f} €")
             st.write(f"**{t['stock']}:** {p_stock} ks")
@@ -314,7 +324,6 @@ def display_product_grid(products_df):
             else:
                 st.error(t['out_of_stock'])
             st.divider()
-
 def display_cart_section():
     total_items = sum(st.session_state.cart.values())
     with st.expander(f"🛒 {t['cart_title']} ({total_items} termék)", expanded=bool(st.session_state.cart)):
