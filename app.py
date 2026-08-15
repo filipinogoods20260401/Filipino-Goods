@@ -513,13 +513,16 @@ if st.session_state.page_view == "checkout":
 else:
     # 1. 🏠 HOME
     if selected_page == t["nav_home"]:
-        col_b1, col_b2, col_b3 = st.columns(3)
-        with col_b1:
-            st.success("🚚 **Gyors Szállítás**\n\n2-4 munkanapon belül, 50 € felett ingyenes!")
-        with col_b2:
-            st.info("💯 **100% Autentikus**\n\nKözvetlenül a legnépszerűbb márkáktól.")
-        with col_b3:
-            st.warning("💳 **Biztonságos Fizetés**\n\nBanki átutalás vagy utánvét.")
+        col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.success(f"🚚 **{t['feature_shipping_title']}**\n\n{t['feature_shipping_desc']}")
+
+with col2:
+    st.info(f"💯 **{t['feature_authentic_title']}**\n\n{t['feature_authentic_desc']}")
+
+with col3:
+    st.warning(f"💳 **{t['feature_payment_title']}**\n\n{t['feature_payment_desc']}")
 
         st.divider()
         st.subheader(t["featured_title"])
