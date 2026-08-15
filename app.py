@@ -206,20 +206,35 @@ if os.path.exists(BANNER_FILE):
     st.image(BANNER_FILE, use_container_width=True)
 
 # --- FEJLÉC ---
-head_col1, head_col2, head_col3 = st.columns([1, 3, 1])
+head_col1, head_col2, head_col3 = st.columns([1, 2, 2])
 
 with head_col1:
     if os.path.exists(LOGO_FILE):
         st.image(LOGO_FILE, width=110)
 
 with head_col3:
-    lang_choice = st.selectbox("🌐 Nyelv / Language:", ["🇸🇰 SK", "🇬🇧 EN", "🇭🇺 HU"])
-    lang_code = "SK"
-    if "EN" in lang_choice:
-        lang_code = "EN"
-    elif "HU" in lang_choice:
-        lang_code = "HU"
-    t = TEXTS[lang_code]
+    st.write("**Nyelv / Language:**")
+    l_col1, l_col2, l_col3 = st.columns(3)
+    
+    # Session state a kiválasztott nyelv tárolásához
+    if "selected_lang" not in st.session_state:
+        st.session_state.selected_lang = "SK"
+
+    with l_col1:
+        if st.button("🇸🇰 SK", type="primary" if st.session_state.selected_lang == "SK" else "secondary", use_container_width=True):
+            st.session_state.selected_lang = "SK"
+            st.rerun()
+    with l_col2:
+        if st.button("🇬🇧 EN", type="primary" if st.session_state.selected_lang == "EN" else "secondary", use_container_width=True):
+            st.session_state.selected_lang = "EN"
+            st.rerun()
+    with l_col3:
+        if st.button("🇭🇺 HU", type="primary" if st.session_state.selected_lang == "HU" else "secondary", use_container_width=True):
+            st.session_state.selected_lang = "HU"
+            st.rerun()
+
+    # Aktuális szótár beállítása
+    t = TEXTS[st.session_state.selected_lang]
 
 # --- NAVIGÁCIÓS MENÜ ---
 nav_options = [
