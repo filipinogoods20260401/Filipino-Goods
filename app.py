@@ -7,7 +7,7 @@ import streamlit as st
 # --- OLDAL BEÁLLÍTÁSA ---
 st.set_page_config(
     page_title="Filipino Goods - Online Shop",
-    page_icon="logo.png" if os.path.exists("logo.png") else "🇵🇭",
+    page_icon="logo.png" if os.path.exists("logo.png") else "📦",
     layout="wide"
 )
 
@@ -35,22 +35,22 @@ def get_product_image(sku):
 # --- NYELVI SZÓTÁR ---
 TEXTS = {
     "SK": {
-        "nav_home": "🏠 Domov",
-        "nav_products": "📦 Produkty",
-        "nav_categories": "📂 Kategórie",
-        "nav_about": "ℹ️ O nás",
-        "nav_policies": "📜 Podmienky",
-        "nav_admin": "⚙️ Admin",
+        "nav_home": "Domov",
+        "nav_products": "Produkty",
+        "nav_categories": "Kategórie",
+        "nav_about": "O nás",
+        "nav_policies": "Podmienky",
+        "nav_admin": "Admin",
         "welcome_title": "Vitajte v obchode Filipino Goods!",
         "welcome_sub": "Autentické filipínske potraviny a produkty priamo k vám doma.",
-        "featured_title": "🔥 Vybrané produkty",
-        "all_products": "📦 Všetky produkty",
-        "search_ph": "🔍 Hľadať produkt (SKU alebo Názov)...",
-        "cart_title": "🛒 Váš košík",
+        "featured_title": "Vybrané produkty",
+        "all_products": "Všetky produkty",
+        "search_ph": "Hľadať produkt (SKU alebo Názov)...",
+        "cart_title": "Váš košík",
         "cart_empty": "Košík je prázdny.",
-        "checkout_btn": "🛍️ Pokladňa",
-        "add_to_cart": "🛒 Do košíka",
-        "remove": "❌ Odstrániť",
+        "checkout_btn": "Pokladňa",
+        "add_to_cart": "Do košíka",
+        "remove": "Odstrániť",
         "stock": "Skladom",
         "out_of_stock": "Vypredané",
         "price": "Cena",
@@ -58,38 +58,38 @@ TEXTS = {
         "total": "Spolu",
         "category_select": "Vyberte kategóriu:",
         "cat_all": "Všetky kategórie",
-        "about_title": "ℹ️ O obchode Filipino Goods",
+        "about_title": "O obchode Filipino Goods",
         "about_text": "Filipino Goods prináša autentické chute Filipín priamo na Slovensko a do strednej Európy.",
-        "contact_info": "📍 Kontakt a adresa",
+        "contact_info": "Kontakt a adresa",
         "address": "Hlavná 123, 946 34 Bátorove Kosihy, Slovensko",
-        "policies_title": "📜 Obchodné podmienky & Pravidlá",
-        "tab_shipping": "🚚 Doručenie",
-        "tab_payment": "💳 Platba",
-        "tab_privacy": "🔒 GDPR & Súkromie",
+        "policies_title": "Obchodné podmienky & Pravidlá",
+        "tab_shipping": "Doručenie",
+        "tab_payment": "Platba",
+        "tab_privacy": "GDPR & Súkromie",
         "shipping_text": "- **Kuriér:** 2-4 pracovné dni.\n- **Poštovné:** Od 3.90 €. Pri objednávke nad 50 € je doprava ZADARMO!",
         "payment_text": "- **Bankový prevod:** Na základe vygenerovanej zálohovej faktúry.\n- **Dobierka:** Platba pri prevzatí (+1.50 €).",
         "privacy_text": "Vaše osobné údaje používame výhradne na spracovanie a doručenie vašej objednávky.",
-        "checkout_title": "📋 Dokončenie objednávky",
-        "submit_order": "✅ Odoslať objednávku",
-        "back": "⬅️ Späť"
+        "checkout_title": "Dokončenie objednávky",
+        "submit_order": "Odoslať objednávku",
+        "back": "Späť"
     },
     "EN": {
-        "nav_home": "🏠 Home",
-        "nav_products": "📦 Products",
-        "nav_categories": "📂 Categories",
-        "nav_about": "ℹ️ About Us",
-        "nav_policies": "📜 Policies",
-        "nav_admin": "⚙️ Admin",
+        "nav_home": "Home",
+        "nav_products": "Products",
+        "nav_categories": "Categories",
+        "nav_about": "About Us",
+        "nav_policies": "Policies",
+        "nav_admin": "Admin",
         "welcome_title": "Welcome to Filipino Goods!",
         "welcome_sub": "Authentic Philippine food and products delivered to your door.",
-        "featured_title": "🔥 Featured Products",
-        "all_products": "📦 All Products",
-        "search_ph": "🔍 Search product (SKU or Name)...",
-        "cart_title": "🛒 Your Cart",
+        "featured_title": "Featured Products",
+        "all_products": "All Products",
+        "search_ph": "Search product (SKU or Name)...",
+        "cart_title": "Your Cart",
         "cart_empty": "Your cart is empty.",
-        "checkout_btn": "🛍️ Checkout",
-        "add_to_cart": "🛒 Add to Cart",
-        "remove": "❌ Remove",
+        "checkout_btn": "Checkout",
+        "add_to_cart": "Add to Cart",
+        "remove": "Remove",
         "stock": "In Stock",
         "out_of_stock": "Out of Stock",
         "price": "Price",
@@ -97,38 +97,38 @@ TEXTS = {
         "total": "Total",
         "category_select": "Select Category:",
         "cat_all": "All Categories",
-        "about_title": "ℹ️ About Filipino Goods",
+        "about_title": "About Filipino Goods",
         "about_text": "Filipino Goods brings the authentic flavors of the Philippines directly to Slovakia and Central Europe.",
-        "contact_info": "📍 Contact Information",
+        "contact_info": "Contact Information",
         "address": "Hlavná 123, 946 34 Bátorove Kosihy, Slovakia",
-        "policies_title": "📜 Terms & Policies",
-        "tab_shipping": "🚚 Delivery",
-        "tab_payment": "💳 Payment",
-        "tab_privacy": "🔒 Privacy & GDPR",
+        "policies_title": "Terms & Policies",
+        "tab_shipping": "Delivery",
+        "tab_payment": "Payment",
+        "tab_privacy": "Privacy & GDPR",
         "shipping_text": "- **Courier Delivery:** 2-4 business days.\n- **Shipping Fee:** From €3.90. FREE shipping on orders over €50!",
         "payment_text": "- **Bank Transfer:** Based on the generated proforma invoice.\n- **Cash on Delivery:** Pay upon delivery (+€1.50).",
         "privacy_text": "We use your personal data exclusively to process and deliver your order.",
-        "checkout_title": "📋 Complete Your Order",
-        "submit_order": "✅ Place Order",
-        "back": "⬅️ Back"
+        "checkout_title": "Complete Your Order",
+        "submit_order": "Place Order",
+        "back": "Back"
     },
     "HU": {
-        "nav_home": "🏠 Főoldal",
-        "nav_products": "📦 Termékek",
-        "nav_categories": "📂 Kategóriák",
-        "nav_about": "ℹ️ Rólunk",
-        "nav_policies": "📜 Szabályzatok",
-        "nav_admin": "⚙️ Admin",
+        "nav_home": "Főoldal",
+        "nav_products": "Termékek",
+        "nav_categories": "Kategóriák",
+        "nav_about": "Rólunk",
+        "nav_policies": "Szabályzatok",
+        "nav_admin": "Admin",
         "welcome_title": "Üdvözöljük a Filipino Goods webáruházban!",
         "welcome_sub": "Eredeti filippínó élelmiszerek és termékek egyenesen az Ön otthonába.",
-        "featured_title": "🔥 Kiemelt Termékek",
-        "all_products": "📦 Összes Termék",
-        "search_ph": "🔍 Keresés (SKU cikkszám vagy Név alapján)...",
-        "cart_title": "🛒 Az Ön Kosara",
+        "featured_title": "Kiemelt Termékek",
+        "all_products": "Összes Termék",
+        "search_ph": "Keresés (SKU cikkszám vagy Név alapján)...",
+        "cart_title": "Az Ön Kosara",
         "cart_empty": "A kosár jelenleg üres.",
-        "checkout_btn": "🛍️ Megrendelés / Pénztár",
-        "add_to_cart": "🛒 Kosárba",
-        "remove": "❌ Törlés",
+        "checkout_btn": "Megrendelés / Pénztár",
+        "add_to_cart": "Kosárba",
+        "remove": "Törlés",
         "stock": "Raktáron",
         "out_of_stock": "Elfogyott",
         "price": "Ár",
@@ -136,20 +136,20 @@ TEXTS = {
         "total": "Összesen",
         "category_select": "Válasszon kategóriát:",
         "cat_all": "Összes Kategória",
-        "about_title": "ℹ️ A Filipino Goods-ról",
+        "about_title": "A Filipino Goods-ról",
         "about_text": "A Filipino Goods elhozza a Fülöp-szigetek autentikus ízeit Szlovákiába és Közép-Európába.",
-        "contact_info": "📍 Kapcsolat és Cím",
+        "contact_info": "Kapcsolat és Cím",
         "address": "Hlavná 123, 946 34 Bátorove Kosihy, Szlovákia",
-        "policies_title": "📜 Vásárlási Feltételek & Szabályzatok",
-        "tab_shipping": "🚚 Szállítás",
-        "tab_payment": "💳 Fizetés",
-        "tab_privacy": "🔒 Adatvédelem & GDPR",
+        "policies_title": "Vásárlási Feltételek & Szabályzatok",
+        "tab_shipping": "Szállítás",
+        "tab_payment": "Fizetés",
+        "tab_privacy": "Adatvédelem & GDPR",
         "shipping_text": "- **Futárszolgálat:** 2-4 munkanap.\n- **Szállítási díj:** 3.90 €-tól. 50 € feletti rendelés esetén INGYENES!",
         "payment_text": "- **Banki átutalás:** A kiállított díjbekérő alapján.\n- **Utánvét:** Fizetés átvételkor a futárnál (+1.50 €).",
         "privacy_text": "Személyes adatait kizárólag a megrendelés feldolgozásához és kiszállításához használjuk fel.",
-        "checkout_title": "📋 Rendelés Befejezése",
-        "submit_order": "✅ Rendelés Elküldése",
-        "back": "⬅️ Vissza"
+        "checkout_title": "Rendelés Befejezése",
+        "submit_order": "Rendelés Elküldése",
+        "back": "Vissza"
     }
 }
 
@@ -210,16 +210,14 @@ if os.path.exists(LOGO_FILE):
     st.image(LOGO_FILE, width=110)
 
 # --- 3. NAVIGÁCIÓS MENÜ ÉS NYELVVÁLASZTÓ EGY SORBAN ---
-lang_options = ["🇸🇰 SK", "🇬🇧 EN", "🇭🇺 HU"]
-lang_code_map = {
-    "🇸🇰 SK": "SK",
-    "🇬🇧 EN": "EN",
-    "🇭🇺 HU": "HU"
+lang_options = ["SK", "EN", "HU"]
+lang_display_names = {
+    "SK": "Slovenčina (SK)",
+    "EN": "English (EN)",
+    "HU": "Magyar (HU)"
 }
-code_to_option = {v: k for k, v in lang_code_map.items()}
 
 current_code = st.session_state.selected_lang
-current_option = code_to_option[current_code]
 t = TEXTS[current_code]
 
 nav_options = [
@@ -246,16 +244,16 @@ for idx, page_name in enumerate(nav_options):
             st.rerun()
 
 with all_cols[6]:
-    selected_option = st.selectbox(
-        f"🌐 Jazyk / Language / Nyelv:",
+    selected_code = st.selectbox(
+        "Jazyk / Language / Nyelv:",
         options=lang_options,
-        index=lang_options.index(current_option),
+        format_func=lambda x: lang_display_names[x],
+        index=lang_options.index(current_code),
         key="lang_selectbox"
     )
     
-    new_lang_code = lang_code_map[selected_option]
-    if new_lang_code != st.session_state.selected_lang:
-        st.session_state.selected_lang = new_lang_code
+    if selected_code != st.session_state.selected_lang:
+        st.session_state.selected_lang = selected_code
         st.rerun()
 
 selected_page = nav_options[st.session_state.current_page_idx]
@@ -281,9 +279,9 @@ def display_product_grid(products_df):
         with cols[col_idx]:
             st.image(img_src, use_container_width=True)
             st.markdown(f"#### {p_name}")
-            st.caption(f"🔑 **SKU:** `{sku}`")
-            st.write(f"💶 **{t['price']}:** {p_price:.2f} €")
-            st.write(f"📦 **{t['stock']}:** {p_stock} ks")
+            st.caption(f"SKU: `{sku}`")
+            st.write(f"**{t['price']}:** {p_price:.2f} €")
+            st.write(f"**{t['stock']}:** {p_stock} ks")
             
             if p_stock > 0:
                 q_col, b_col = st.columns([1, 2])
