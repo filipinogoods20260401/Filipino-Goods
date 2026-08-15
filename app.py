@@ -1,42 +1,445 @@
+from datetime import datetime
+import os
+import re
+import pandas as pd
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 import streamlit as st
 
-# 1. Állapot (session_state) inicializálása
-if 'selected_category' not in st.session_state:
-    st.session_state.selected_category = None
+# --- OLDAL BEÁLLÍTÁSA ---
+st.set_page_config(
+    page_title="Filipino Goods - Online Shop",
+    page_icon="logo.png" if os.path.exists("logo.png") else "🇵🇭",
+    layout="wide"
+)
 
-st.title("📁 Kategórie")
+EXCEL_FILE = 'Inventory management spreadsheet base.xlsx'
+INVOICES_DIR = 'invoices'
+IMAGES_DIR = 'images'
+LOGO_FILE = 'logo.png'
+BANNER_FILE = 'hero_banner.png'
+NO_IMAGE_URL = 'https://via.placeholder.com/300x200?text=No+Image'
 
-# Példa kategóriák listájára (helyettesítsd a saját listáddal)
-categories = ["Konzervy", "Snacks", "Omáčky a koreniny", "Nápoje"]
+if not os.path.exists(INVOICES_DIR):
+    os.makedirs(INVOICES_DIR)
 
-# ---------------------------------------------------------
-# A) HA MÉG NINCS KIVÁLASZTVA KATEGÓRIA
-# ---------------------------------------------------------
-if st.session_state.selected_category is None:
-    st.write("Vyberte kategóriu:")
+if not os.path.exists(IMAGES_DIR):
+    os.makedirs(IMAGES_DIR)
+
+# --- SEGÉDFÜGGVÉNY A TERMÉKKÉP MEGKERESÉSÉRE ---
+def get_product_image(sku):
+    sku_str = str(sku).strip()
+    for ext in ['.jpg', '.jpeg', '.png', '.webp']:
+        img_path = os.path.join(IMAGES_DIR, f"{sku_str}{ext}")
+        if os.path.exists(img_path):
+            return img_path
+    return NO_IMAGE_URL
+
+# --- NYELVI SZÓTÁR (SK / EN / HU) ---
+TEXTS = {
+    "SK": {
+        "nav_home": "🏠 Domov",
+        "nav_products": "📦 Produkty",
+        "nav_categories": "📂 Kategórie",
+        "nav_about": "ℹ️ O nás",
+        "nav_policies": "📜 Podmienky",
+        "nav_admin": "⚙️ Admin",
+        "welcome_title": "Vitajte v obchode Filipino Goods!",
+        "welcome_sub": "Autentické filipínske potraviny a produkty priamo k vám doma.",
+        "featured_title": "🔥 Vybrané produkty",
+        "all_products": "📦 Všetky produkty",
+        "search_ph": "🔍 Hľadať produkt (SKU alebo Názov)...",
+        "cart_title": "🛒 Váš košík",
+        "cart_empty": "Košík je prázdny.",
+        "checkout_btn": "🛍️ Pokladňa",
+        "add_to_cart": "🛒 Do košíka",
+        "remove": "❌ Odstrániť",
+        "stock": "Skladom",
+        "out_of_stock": "Vyprodané",
+        "price": "Cena",
+        "qty": "Množstvo",
+        "total": "Spolu",
+        "category_select": "Vyberte kategóriu:",
+        "cat_all": "Všetky kategórie",
+        "about_title": "ℹ️ O obchode Filipino Goods",
+        "about_text": "Filipino Goods prináša autentické chute Filipín priamo na Slovensko a do strednej Európy.",
+        "contact_info": "📍 Kontakt a adresa",
+        "address": "Hlavná 123, 946 34 Bátorove Kosihy, Slovensko",
+        "policies_title": "📜 Obchodné podmienky & Pravidlá",
+        "tab_shipping": "🚚 Doručenie",
+        "tab_payment": "💳 Platba",
+        "tab_privacy": "🔒 GDPR & Súkromie",
+        "shipping_text": "- **Kuriér:** 2-4 pracovné dni.\n- **Poštovné:** Od 3.90 €. Pri objednávke nad 50 € je doprava ZADARMO!",
+        "payment_text": "- **Bankový prevod:** Na základe vygenerovanej zálohovej faktúry.\n- **Dobierka:** Platba pri prevzatí (+1.50 €).",
+        "privacy_text": "Vaše osobné údaje používame výhradne na spracovanie a doručenie vašej objednávky.",
+        "checkout_title": "📋 Dokončenie objednávky",
+        "customer_details": "📝 Údaje pre doručenie a fakturáciu",
+        "name": "Meno a priezvisko / Názov firmy*",
+        "email": "E-mail*",
+        "phone": "Telefón*",
+        "address_label": "Adresa (Ulica, PSČ, Mesto)*",
+        "ico": "IČO / DIČ (voliteľné)",
+        "submit_order": "✅ Odeslať objednávku",
+        "success_msg": "🎉 Objednávka bola úspešne prijatá!",
+        "download_inv": "📄 Stiahnuť faktúru (PDF)",
+        "back": "⬅️ Späť"
+    },
+    "EN": {
+        "nav_home": "🏠 Home",
+        "nav_products": "📦 Products",
+        "nav_categories": "📂 Categories",
+        "nav_about": "ℹ️ About Us",
+        "nav_policies": "📜 Policies",
+        "nav_admin": "⚙️ Admin",
+        "welcome_title": "Welcome to Filipino Goods!",
+        "welcome_sub": "Authentic Philippine food and products delivered to your door.",
+        "featured_title": "🔥 Featured Products",
+        "all_products": "📦 All Products",
+        "search_ph": "🔍 Search product (SKU or Name)...",
+        "cart_title": "🛒 Your Cart",
+        "cart_empty": "Your cart is empty.",
+        "checkout_btn": "🛍️ Checkout",
+        "add_to_cart": "🛒 Add to Cart",
+        "remove": "❌ Remove",
+        "stock": "In Stock",
+        "out_of_stock": "Out of Stock",
+        "price": "Price",
+        "qty": "Quantity",
+        "total": "Total",
+        "category_select": "Select Category:",
+        "cat_all": "All Categories",
+        "about_title": "ℹ️ About Filipino Goods",
+        "about_text": "Filipino Goods brings the authentic flavors of the Philippines directly to Slovakia and Central Europe.",
+        "contact_info": "📍 Contact Information",
+        "address": "Hlavná 123, 946 34 Bátorove Kosihy, Slovakia",
+        "policies_title": "📜 Terms & Policies",
+        "tab_shipping": "🚚 Delivery",
+        "tab_payment": "💳 Payment",
+        "tab_privacy": "🔒 Privacy & GDPR",
+        "shipping_text": "- **Courier Delivery:** 2-4 business days.\n- **Shipping Fee:** From €3.90. FREE shipping on orders over €50!",
+        "payment_text": "- **Bank Transfer:** Based on the generated proforma invoice.\n- **Cash on Delivery:** Pay upon delivery (+€1.50).",
+        "privacy_text": "We use your personal data exclusively to process and deliver your order.",
+        "checkout_title": "📋 Complete Your Order",
+        "customer_details": "📝 Delivery & Billing Address",
+        "name": "Full Name / Company Name*",
+        "email": "E-mail*",
+        "phone": "Phone*",
+        "address_label": "Address (Street, ZIP, City)*",
+        "ico": "Company ID / Tax ID (optional)",
+        "submit_order": "✅ Place Order",
+        "success_msg": "🎉 Order successfully placed!",
+        "download_inv": "📄 Download Invoice (PDF)",
+        "back": "⬅️ Back"
+    },
+    "HU": {
+        "nav_home": "🏠 Főoldal",
+        "nav_products": "📦 Termékek",
+        "nav_categories": "📂 Kategóriák",
+        "nav_about": "ℹ️ Rólunk",
+        "nav_policies": "📜 Szabályzatok",
+        "nav_admin": "⚙️ Adminisztráció",
+        "welcome_title": "Üdvözöljük a Filipino Goods webáruházban!",
+        "welcome_sub": "Eredeti filippínó élelmiszerek és termékek egyenesen az Ön otthonába.",
+        "featured_title": "🔥 Kiemelt Termékek",
+        "all_products": "📦 Összes Termék",
+        "search_ph": "🔍 Keresés (SKU cikkszám vagy Név alapján)...",
+        "cart_title": "🛒 Az Ön Kosara",
+        "cart_empty": "A kosár jelenleg üres.",
+        "checkout_btn": "🛍️ Megrendelés / Pénztár",
+        "add_to_cart": "🛒 Kosárba",
+        "remove": "❌ Törlés",
+        "stock": "Raktáron",
+        "out_of_stock": "Elfogyott",
+        "price": "Ár",
+        "qty": "Mennyiség",
+        "total": "Összesen",
+        "category_select": "Válasszon kategóriát:",
+        "cat_all": "Összes Kategória",
+        "about_title": "ℹ️ A Filipino Goods-ról",
+        "about_text": "A Filipino Goods elhozza a Fülöp-szigetek autentikus ízeit Szlovákiába és Közép-Európába.",
+        "contact_info": "📍 Kapcsolat és Cím",
+        "address": "Hlavná 123, 946 34 Bátorove Kosihy, Szlovákia",
+        "policies_title": "📜 Vásárlási Feltételek & Szabályzatok",
+        "tab_shipping": "🚚 Szállítás",
+        "tab_payment": "💳 Fizetés",
+        "tab_privacy": "🔒 Adatvédelem & GDPR",
+        "shipping_text": "- **Futárszolgálat:** 2-4 munkanap.\n- **Szállítási díj:** 3.90 €-tól. 50 € feletti rendelés esetén INGYENES!",
+        "payment_text": "- **Banki átutalás:** A kiállított díjbekérő alapján.\n- **Utánvét:** Fizetés átvételkor a futárnál (+1.50 €).",
+        "privacy_text": "Személyes adatait kizárólag a megrendelés feldolgozásához és kiszállításához használjuk fel.",
+        "checkout_title": "📋 Rendelés Befejezése",
+        "customer_details": "📝 Szállítási és Számlázási Adatok",
+        "name": "Név / Cégnév*",
+        "email": "E-mail*",
+        "phone": "Telefonszám*",
+        "address_label": "Cím (Utca, házszám, irányítószám, város)*",
+        "ico": "Cégszám / Adószám (opcionális)",
+        "submit_order": "✅ Rendelés Elküldése",
+        "success_msg": "🎉 Rendelését sikeresen rögzítettük!",
+        "download_inv": "📄 Díjbekérő / Számla letöltése (PDF)",
+        "back": "⬅️ Vissza"
+    }
+}
+
+# --- ÁR TISZTÍTÁS ---
+def clean_price(val):
+    if pd.isna(val):
+        return 0.0
+    if isinstance(val, (int, float)):
+        return float(val)
+    val_str = str(val).replace(',', '.').replace('€', '').strip()
+    match = re.search(r"[-+]?\d*\.\d+|\d+", val_str)
+    return float(match.group()) if match else 0.0
+
+# --- EXCEL ADATOK BETÖLTÉSE ---
+@st.cache_data(ttl=2)
+def load_products():
+    if not os.path.exists(EXCEL_FILE):
+        return pd.DataFrame()
+    xls = pd.ExcelFile(EXCEL_FILE)
+    sheet_name = 'Current Stock' if 'Current Stock' in xls.sheet_names else xls.sheet_names[0]
+    df = pd.read_excel(xls, sheet_name=sheet_name)
+    df.columns = [str(col).replace('\n', ' ').strip() for col in df.columns]
+    df = df.dropna(subset=['SKU', 'Product Name']).copy()
+    df['SKU'] = df['SKU'].astype(str).str.strip()
     
-    # Kategóriák megjelenítése 2 oszlopos gomb/kártya hálózatban
-    cols = st.columns(2)
-    for idx, category_name in enumerate(categories):
-        with cols[idx % 2]:
-            # Kattintható gomb minden kategóriához
-            if st.button(f"📦 {category_name}", key=f"cat_{category_name}", use_container_width=True):
-                st.session_state.selected_category = category_name
-                st.rerun()  # Oldal újratöltése a kiválasztott kategóriával
+    selling_col = next((c for c in df.columns if 'selling price' in c.lower()), None)
+    df['Selling Price (€)'] = df[selling_col].apply(clean_price) if selling_col else 0.0
 
-# ---------------------------------------------------------
-# B) HA MÁR KI VAN VÁLASZTVA EGY KATEGÓRIA
-# ---------------------------------------------------------
-else:
-    # "Vissza a kategóriákhoz" gomb
-    if st.button("← Všetky kategórie"):
-        st.session_state.selected_category = None
+    stock_col = next((c for c in df.columns if any(k in c.lower() for k in ['stock', 'pieces', 'sklad'])), None)
+    df['Current Stock'] = pd.to_numeric(df[stock_col], errors='coerce').fillna(0).astype(int) if stock_col else 0
+
+    cat_col = next((c for c in df.columns if any(k in c.lower() for k in ['category', 'kategória', 'kategoria', 'type'])), None)
+    df['Category'] = df[cat_col].astype(str).str.strip() if cat_col else 'General'
+
+    return df
+
+# Session States
+if "cart" not in st.session_state:
+    st.session_state.cart = {}
+if "page_view" not in st.session_state:
+    st.session_state.page_view = "shop"
+if "current_page_idx" not in st.session_state:
+    st.session_state.current_page_idx = 0
+
+df_products = load_products()
+
+# ==========================================
+# VÍZSZINTES FEJLÉC (TOP BAR)
+# ==========================================
+head_col1, head_col2, head_col3 = st.columns([1, 3, 1])
+
+with head_col1:
+    if os.path.exists(LOGO_FILE):
+        st.image(LOGO_FILE, width=110)
+
+with head_col3:
+    lang_choice = st.selectbox("🌐 Nyelv / Language:", ["🇸🇰 SK", "🇬🇧 EN", "🇭🇺 HU"])
+    lang_code = "SK"
+    if "EN" in lang_choice:
+        lang_code = "EN"
+    elif "HU" in lang_choice:
+        lang_code = "HU"
+    t = TEXTS[lang_code]
+
+# VÍZSZINTES MENÜSÁV
+nav_options = [
+    t["nav_home"],
+    t["nav_products"],
+    t["nav_categories"],
+    t["nav_about"],
+    t["nav_policies"],
+    t["nav_admin"]
+]
+
+# Rádiógomb szinkronizálása az index alapján
+selected_page = st.radio(
+    "", 
+    nav_options, 
+    index=st.session_state.current_page_idx, 
+    horizontal=True
+)
+
+# Frissítjük az indexet, ha a felhasználó közvetlenül a rádiógombra kattintott
+st.session_state.current_page_idx = nav_options.index(selected_page)
+st.divider()
+
+# --- TERMÉKEK MEGJELENÍTÉSE RÁCSBAN ---
+def display_product_grid(products_df):
+    if products_df.empty:
+        st.info("No products found.")
+        return
+
+    cols = st.columns(3)
+    for idx, row in products_df.reset_index(drop=True).iterrows():
+        col_idx = idx % 3
+        sku = str(row['SKU'])
+        p_name = row['Product Name']
+        p_price = float(row['Selling Price (€)'])
+        p_stock = int(row['Current Stock'])
+        img_src = get_product_image(sku)
+
+        with cols[col_idx]:
+            st.image(img_src, use_container_width=True)
+            st.markdown(f"### {p_name}")
+            st.info(f"🔑 **SKU:** `{sku}`")
+            st.write(f"💶 **{t['price']}:** {p_price:.2f} €")
+            st.write(f"📦 **{t['stock']}:** {p_stock} ks")
+            
+            if p_stock > 0:
+                quantity = st.number_input(
+                    t['qty'],
+                    min_value=1,
+                    max_value=p_stock,
+                    value=1,
+                    key=f"qty_{sku}"
+                )
+                if st.button(t['add_to_cart'], key=f"btn_{sku}"):
+                    st.session_state.cart[sku] = st.session_state.cart.get(sku, 0) + quantity
+                    st.success(f"Added! ({quantity}x)")
+            else:
+                st.error(t['out_of_stock'])
+            st.divider()
+
+# --- KOSÁR MODUL ---
+def display_cart_section():
+    with st.expander(f"🛒 {t['cart_title']} ({sum(st.session_state.cart.values())} termék)", expanded=bool(st.session_state.cart)):
+        if not st.session_state.cart:
+            st.info(t['cart_empty'])
+        else:
+            grand_total = 0.0
+            for sku, qty in list(st.session_state.cart.items()):
+                prod_match = df_products[df_products['SKU'] == sku]
+                if not prod_match.empty:
+                    p_row = prod_match.iloc[0]
+                    p_name = p_row['Product Name']
+                    p_price = float(p_row['Selling Price (€)'])
+                    total_p = p_price * qty
+                    grand_total += total_p
+                    
+                    c_del, c_txt, c_tot = st.columns([1, 4, 2])
+                    with c_del:
+                        if st.button("❌", key=f"del_{sku}"):
+                            del st.session_state.cart[sku]
+                            st.rerun()
+                    with c_txt:
+                        st.write(f"**{p_name}** ({qty}x {p_price:.2f} €)")
+                    with c_tot:
+                        st.write(f"**{total_p:.2f} €**")
+
+            st.markdown(f"### **{t['total']}: {grand_total:.2f} €**")
+            if st.button(t['checkout_btn'], type="primary", use_container_width=True):
+                st.session_state.page_view = "checkout"
+                st.rerun()
+
+# ==========================================
+# OLDALAK MEGJELENÍTÉSE
+# ==========================================
+
+if st.session_state.page_view == "checkout":
+    if st.button(t['back']):
+        st.session_state.page_view = "shop"
         st.rerun()
 
-    st.subheader(f"Kategória: {st.session_state.selected_category}")
-    
-    # ITT JELENÍTSD MEG A TERMÉKEKET (Szűrve a kiválasztott kategóriára)
-    # Példa szűrés:
-    # filtered_products = [p for p in all_products if p['category'] == st.session_state.selected_category]
-    
-    # Termékek megjelenítése ciklussal...
+    st.title(t['checkout_title'])
+
+    if not st.session_state.cart:
+        st.warning(t['cart_empty'])
+    else:
+        cart_items = []
+        grand_total = 0.0
+        for sku, qty in st.session_state.cart.items():
+            prod_match = df_products[df_products['SKU'] == sku]
+            if not prod_match.empty:
+                p_row = prod_match.iloc[0]
+                p_name = p_row['Product Name']
+                p_price = float(p_row['Selling Price (€)'])
+                total_p = p_price * qty
+                grand_total += total_p
+                cart_items.append({"sku": sku, "nev": p_name, "ar": p_price, "ks": qty, "spolu": total_p})
+
+        summary_df = pd.DataFrame(cart_items)
+        st.dataframe(summary_df, use_container_width=True, hide_index=True)
+        st.markdown(f"### **{t['total']}: {grand_total:.2f} €**")
+
+else:
+    # 1. 🏠 HOME
+    if selected_page == t["nav_home"]:
+        if os.path.exists(BANNER_FILE):
+            st.image(BANNER_FILE, use_container_width=True)
+            
+            # Gombok a banner alatt, hibamentes navigálással
+            btn_col1, btn_col2, _ = st.columns([1, 1, 2])
+            with btn_col1:
+                if st.button("🛍️ SHOP NOW", type="primary", use_container_width=True):
+                    st.session_state.current_page_idx = 1 # Választás a 'Produkty' (index 1) oldalra
+                    st.rerun()
+            with btn_col2:
+                if st.button("🤍 OUR STORY", use_container_width=True):
+                    st.session_state.current_page_idx = 3 # Választás az 'O nás' (index 3) oldalra
+                    st.rerun()
+        else:
+            st.title(t["welcome_title"])
+
+        st.divider()
+
+        # Vásárlási előnyök
+        col_b1, col_b2, col_b3 = st.columns(3)
+        with col_b1:
+            st.success("🚚 **Gyors Szállítás**\n\n2-4 munkanapon belül, 50 € felett ingyenes!")
+        with col_b2:
+            st.info("💯 **100% Autentikus**\n\nKözvetlenül a legnépszerűbb márkáktól.")
+        with col_b3:
+            st.warning("💳 **Biztonságos Fizetés**\n\nBanki átutalás vagy utánvét.")
+
+        st.divider()
+        st.subheader(t["featured_title"])
+        display_product_grid(df_products.head(6))
+        display_cart_section()
+
+    # 2. 📦 PRODUCTS
+    elif selected_page == t["nav_products"]:
+        st.title(t["all_products"])
+        search_query = st.text_input(t["search_ph"], "")
+        filtered_df = df_products[
+            df_products['Product Name'].str.contains(search_query, case=False, na=False) |
+            df_products['SKU'].str.contains(search_query, case=False, na=False)
+        ] if search_query else df_products
+
+        display_product_grid(filtered_df)
+        display_cart_section()
+
+    # 3. 📂 CATEGORIES
+    elif selected_page == t["nav_categories"]:
+        st.title(t["nav_categories"])
+        cats = [t["cat_all"]] + sorted(list(df_products['Category'].unique()))
+        selected_cat = st.selectbox(t["category_select"], cats)
+        filtered_df = df_products if selected_cat == t["cat_all"] else df_products[df_products['Category'] == selected_cat]
+        display_product_grid(filtered_df)
+        display_cart_section()
+
+    # 4. ℹ️ ABOUT US
+    elif selected_page == t["nav_about"]:
+        st.title(t["about_title"])
+        st.write(t["about_text"])
+        st.subheader(t["contact_info"])
+        st.write(f"- 📍 {t['address']}\n- 📧 info@filipinogoods.sk\n- 📞 +421 900 123 456")
+        display_cart_section()
+
+    # 5. 📜 POLICIES
+    elif selected_page == t["nav_policies"]:
+        st.title(t["policies_title"])
+        tab1, tab2, tab3 = st.tabs([t["tab_shipping"], t["tab_payment"], t["tab_privacy"]])
+        with tab1:
+            st.markdown(t["shipping_text"])
+        with tab2:
+            st.markdown(t["payment_text"])
+        with tab3:
+            st.markdown(t["privacy_text"])
+        display_cart_section()
+
+    # 6. ⚙️ ADMIN
+    elif selected_page == t["nav_admin"]:
+        st.title("⚙️ Admin Dashboard")
+        st.dataframe(df_products, use_container_width=True)
