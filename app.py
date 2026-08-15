@@ -671,8 +671,29 @@ if st.session_state.get("show_checkout", False):
     st.divider()
     st.title(f"💳 {t['checkout_title']}")
     
+    # Kiszámoljuk a kosár értékét és a forint árat
+    cart_total = 0.0
+    for sku, qty in st.session_state.cart.items():
+        product_row = products_df[products_df["SKU"].astype(str) == str(sku)]
+        if not product_row.empty:
+            p_price = float(product_row.iloc[0]["Selling Price (€)"])
+            cart_total += p_price * qty
+
+    eur_huf = get_eur_huf_rate()
+    cart_huf = cart_total * eur_huf
+
     u = st.session_state.user or {}
     
+    # 1. Rendelés Összegzése Kártya
+    st.subheader(f"🛒 {t['order_summary']}")
+    
+    # Árak megjelenítése a kért sorrendben
+    st.markdown(f"### **{t['total']}: {cart_total:.2f} €**")
+    st.caption(f"≈ {cart_huf:,.0f} HUF".replace(",", " "))
+    st.caption(f"*(1 EUR = {eur_huf:.2f} HUF)*")
+    st.divider()
+
+    # 2. Megrendelési Űrlap
     with st.form("checkout_form"):
         st.subheader(t["customer_info"])
         if st.session_state.user:
@@ -698,6 +719,7 @@ if st.session_state.get("show_checkout", False):
             if not (name and email and phone and address and city and zip_code):
                 st.error(t["order_error"])
             else:
+                # Készlet levonása
                 for sku, qty in st.session_state.cart.items():
                     idx = products_df[products_df["SKU"].astype(str) == str(sku)].index
                     if not idx.empty:
@@ -715,6 +737,7 @@ if st.session_state.get("show_checkout", False):
                 st.success(t["order_success"])
                 st.session_state.cart = {}
                 st.session_state.show_checkout = False
+                st.rerun()
                 
     if st.button(f"⬅️ {t['back']}"):
         st.session_state.show_checkout = False
