@@ -520,21 +520,71 @@ if st.session_state.page_view == "checkout":
                     st.session_state.cart = {}
 
 else:
-    # 1. 🏠 HOME
+    # 1. 🏠 HOME (FŐOLDAL)
     if page == t["nav_home"]:
         if os.path.exists(BANNER_FILE):
-            st.image(BANNER_FILE, use_container_width=True)
-            
-            # Működő gombok közvetlenül a kép alatt
-            btn_col1, btn_col2, _ = st.columns([1, 1, 2])
-            with btn_col1:
-                if st.button("🛍️ SHOP NOW", type="primary", use_container_width=True):
+            # CSS: Egyedi gombok a képre pozicionálva
+            st.markdown(
+                """
+                <style>
+                .banner-wrapper {
+                    position: relative;
+                    width: 100%;
+                    display: inline-block;
+                }
+                .banner-img {
+                    width: 100%;
+                    height: auto;
+                    display: block;
+                }
+                .btn-overlay-shop {
+                    position: absolute;
+                    top: 46%;
+                    left: 5.8%;
+                    width: 12.3%;
+                    height: 7%;
+                    background: transparent;
+                    border: none;
+                    cursor: pointer;
+                    z-index: 99;
+                }
+                .btn-overlay-story {
+                    position: absolute;
+                    top: 56.2%;
+                    left: 5.8%;
+                    width: 12.3%;
+                    height: 7%;
+                    background: transparent;
+                    border: none;
+                    cursor: pointer;
+                    z-index: 99;
+                }
+                </style>
+                """,
+                unsafe_allow_html=True
+            )
+
+            # Megjelenítjük a képet és fölé tesszük a láthatatlan, kattintható mezőket
+            st.markdown(
+                f"""
+                <div class="banner-wrapper">
+                    <img src="app/static/{BANNER_FILE}" class="banner-img" onerror="this.src='{BANNER_FILE}';">
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+            # Streamlit gombok elhelyezése a kép alatt látható és kattintható formában
+            c1, c2, _ = st.columns([1, 1, 2])
+            with c1:
+                if st.button("🛍️ SHOP NOW (Katalógus)", type="primary", use_container_width=True):
                     st.session_state.current_nav = t["nav_products"]
                     st.rerun()
-            with btn_col2:
-                if st.button("🤍 OUR STORY", use_container_width=True):
+            with c2:
+                if st.button("🤍 OUR STORY (Rólunk)", use_container_width=True):
                     st.session_state.current_nav = t["nav_about"]
                     st.rerun()
+
         else:
             st.title(t["welcome_title"])
             st.caption(t["welcome_sub"])
