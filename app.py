@@ -1,5 +1,6 @@
 from datetime import datetime
 import os
+import re
 import pandas as pd
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
@@ -20,15 +21,74 @@ INVOICES_DIR = 'invoices'
 if not os.path.exists(INVOICES_DIR):
     os.makedirs(INVOICES_DIR)
 
+# Segédfüggvény a szöveges árak számmá alakítására (pl. "3.99 €" -> 3.99)
+def clean_price(val):
+    if pd.isna(val):
+        return 0.0
+    if isinstance(val, (int, float)):
+        return float(val)
+    val_str = str(val).replace(',', '.').replace('€', '').strip()
+    match = re.search(r"[-+]?\d*\.\d+|\d+", val_str)
+    if match:
+        return float(match.group())
+    return 0.0
+
 # --- ADATOK BETÖLTÉSE AZ EXCELBŐL ---
 @st.cache_data(ttl=2)
 def load_products():
     if not os.path.exists(EXCEL_FILE):
         st.error(f"Súbor '{EXCEL_FILE}' nebol nájdený! / Az Excel fájl nem található.")
         return pd.DataFrame()
-    df = pd.read_excel(EXCEL_FILE, sheet_name='Current Stock')
+    
+    xls = pd.ExcelFile(EXCEL_FILE)
+    
+    sheet_name = 'Current Stock' if 'Current Stock' in xls.sheet_names else xls.sheet_names[0]
+    df = pd.read_excel(xls, sheet_name=sheet_name)
+    
+    # Oszlopnevek tisztítása
+    df.columns = [str(col).strip() for col in df.columns]
+    
     df = df.dropna(subset=['SKU', 'Product Name']).copy()
     df['SKU'] = df['SKU'].astype(str).str.strip()
+    
+    # 1. Vásárlói ár beolvasása (Selling Price)
+    selling_col = None
+    for col in df.columns:
+        if col.lower().startswith('selling price'):
+            selling_col = col
+            break
+            
+    if selling_col:
+        df['Selling Price (€)'] = df[selling_col].apply(clean_price)
+    elif 'Unit Price (€)' in df.columns:
+        df['Selling Price (€)'] = df['Unit Price (€)'].apply(clean_price)
+    else:
+        df['Selling Price (€)'] = 0.0
+
+    # 2. Beszállítói nettó ár beolvasása (Suppliers Price (€) / Buying price)
+    supplier_col = None
+    for col in df.columns:
+        if 'supplier' in col.lower() or 'buying' in col.lower() or 'unit price' in col.lower():
+            supplier_col = col
+            break
+            
+    if supplier_col:
+        df['Buying Price (€)'] = df[supplier_col].apply(clean_price)
+    else:
+        df['Buying Price (€)'] = df['Selling Price (€)']
+
+    # 3. Készlet oszlop kinyerése
+    stock_col = None
+    for c in df.columns:
+        if 'stock' in c.lower() or 'pieces' in c.lower() or 'sklad' in c.lower():
+            stock_col = c
+            break
+            
+    if stock_col:
+        df['Current Stock'] = pd.to_numeric(df[stock_col], errors='coerce').fillna(0).astype(int)
+    elif 'Current Stock' not in df.columns:
+        df['Current Stock'] = 10
+
     return df
 
 @st.cache_data(ttl=2)
@@ -151,7 +211,8 @@ def process_order_in_excel(cart_items, order_no, customer_info):
 
             mask = df_stock['SKU'].astype(str).str.strip() == sku
             if mask.any():
-                df_stock.loc[mask, 'Current Stock'] = df_stock.loc[mask, 'Current Stock'] - qty
+                if 'Current Stock' in df_stock.columns:
+                    df_stock.loc[mask, 'Current Stock'] = df_stock.loc[mask, 'Current Stock'] - qty
 
             new_sales_rows.append({
                 'SKU': sku,
@@ -200,19 +261,14 @@ if mode == "⚙️ Admin / Správa":
     with tab1:
         st.subheader("📊 Raktárkészlet és Árak összehasonlítása")
         if not df_products.empty:
-            # Megjelenítendő oszlopok kiválasztása az Admin felületen
-            cols_to_show = ['SKU', 'Product Name', 'Current Stock']
-            if 'Unit Price (€)' in df_products.columns:
-                cols_to_show.append('Unit Price (€)')
-            if 'Selling Price (€)' in df_products.columns:
-                cols_to_show.append('Selling Price (€)')
+            cols_to_show = ['SKU', 'Product Name', 'Buying Price (€)', 'Selling Price (€)', 'Current Stock']
+            available_cols = [c for c in cols_to_show if c in df_products.columns]
             
-            admin_df = df_products[cols_to_show].copy()
+            admin_df = df_products[available_cols].copy()
             
-            # Oszlopnevek átnevezése a tisztább átláthatóságért
             rename_dict = {
-                'Unit Price (€)': 'Beszállítói Nettó Ár (€)',
-                'Selling Price (€)': 'Vevői Eladási Ár (€)',
+                'Buying Price (€)': 'Beszállítói Nettó Ár (€)',
+                'Selling Price (€)': 'Vásárlói Eladási Ár (€)',
                 'Current Stock': 'Raktárkészlet (ks)'
             }
             admin_df = admin_df.rename(columns=rename_dict)
@@ -271,13 +327,7 @@ else:
             col_idx = idx % 3
             sku = str(row['SKU'])
             p_name = row['Product Name']
-            
-            # Vevői eladási ár használata (ha nincs Selling Price oszlop, visszalép Unit Price-ra)
-            if 'Selling Price (€)' in row and pd.notna(row['Selling Price (€)']):
-                p_price = float(row['Selling Price (€)'])
-            else:
-                p_price = float(row['Unit Price (€)'])
-                
+            p_price = float(row['Selling Price (€)'])
             p_stock = int(row['Current Stock'])
 
             with cols[col_idx]:
@@ -290,7 +340,7 @@ else:
                     quantity = st.number_input(
                         "Počet / Mennyiség",
                         min_value=1,
-                        max_value=p_stock,
+                        max_value=p_stock if p_stock > 0 else 999,
                         value=1,
                         key=f"qty_{sku}"
                     )
@@ -317,11 +367,7 @@ else:
                 if not prod_match.empty:
                     p_row = prod_match.iloc[0]
                     p_name = p_row['Product Name']
-                    
-                    if 'Selling Price (€)' in p_row and pd.notna(p_row['Selling Price (€)']):
-                        p_price = float(p_row['Selling Price (€)'])
-                    else:
-                        p_price = float(p_row['Unit Price (€)'])
+                    p_price = float(p_row['Selling Price (€)'])
                         
                     total_p = p_price * qty
                     grand_total += total_p
@@ -361,11 +407,7 @@ else:
                 if not prod_match.empty:
                     p_row = prod_match.iloc[0]
                     p_name = p_row['Product Name']
-                    
-                    if 'Selling Price (€)' in p_row and pd.notna(p_row['Selling Price (€)']):
-                        p_price = float(p_row['Selling Price (€)'])
-                    else:
-                        p_price = float(p_row['Unit Price (€)'])
+                    p_price = float(p_row['Selling Price (€)'])
                         
                     total_p = p_price * qty
                     grand_total += total_p
