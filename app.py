@@ -244,18 +244,22 @@ for idx, page_name in enumerate(nav_options):
 with all_cols[6]:
     st.markdown(f"<div style='text-align: right; padding-top: 6px; font-weight: bold;'>{t['lang_label']}</div>", unsafe_allow_html=True)
 
-# 3 Nyelvgomb zászlókkal és nyelvnevekkel
+# 3 Nyelvgomb online SVG zászlókkal (Windows alatt is tökéletesen működik)
 languages = [
-    ("SK", "🇸🇰 SK"),
-    ("EN", "🇬🇧 EN"),
-    ("HU", "🇭🇺 HU")
+    ("SK", "https://flagcdn.com/24x18/sk.png", "SK"),
+    ("EN", "https://flagcdn.com/24x18/gb.png", "EN"),
+    ("HU", "https://flagcdn.com/24x18/hu.png", "HU")
 ]
 
-for l_idx, (code, label) in enumerate(languages):
+for l_idx, (code, img_url, label) in enumerate(languages):
     with all_cols[7 + l_idx]:
         is_lang_active = (st.session_state.selected_lang == code)
+        
+        # HTML formátumú gomb felirat képpel
+        button_label = f"![{label}]({img_url}) {label}"
+        
         if st.button(
-            label, 
+            button_label, 
             key=f"lang_btn_{code}", 
             type="primary" if is_lang_active else "secondary", 
             use_container_width=True
