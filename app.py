@@ -66,7 +66,7 @@ def load_products():
     # 2. Beszállítói nettó ár (Suppliers Price (€) / Buying price / Unit Price)
     supplier_col = None
     for col in df.columns:
-        if any(keyword in col.lower() for keyword in ['supplier', 'buying', 'unit price', 'beszállítói', 'nettó']):
+        if any(keyword in col.lower() for keyword in ['suppliers', 'buying', 'unit price', 'beszállítói', 'nettó']):
             supplier_col = col
             break
             
