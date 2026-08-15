@@ -17,7 +17,6 @@ st.set_page_config(
 EXCEL_FILE = 'Inventory management spreadsheet base.xlsx'
 INVOICES_DIR = 'invoices'
 
-# Számlák mappájának létrehozása, ha nem létezik
 if not os.path.exists(INVOICES_DIR):
     os.makedirs(INVOICES_DIR)
 
@@ -46,7 +45,7 @@ if "cart" not in st.session_state:
     st.session_state.cart = {}
 
 if "page" not in st.session_state:
-    st.session_state.page = "shop"  # "shop" vagy "checkout"
+    st.session_state.page = "shop"
 
 # --- ÉKEZETES BETŰTÍPUS REGISZTRÁLÁSA (PDF) ---
 def register_fonts():
@@ -56,7 +55,6 @@ def register_fonts():
         pdfmetrics.registerFont(TTFont('ArialCustom-Italic', 'C:\\Windows\\Fonts\\ariali.ttf'))
         return 'ArialCustom', 'ArialCustom-Bold', 'ArialCustom-Italic'
     except Exception:
-        # Ha nem érhető el az Arial ttf fájl, fallback
         return 'Helvetica', 'Helvetica-Bold', 'Helvetica-Oblique'
 
 # --- AUTOMATA ZÁLOHOVÁ FAKTÚRA (PDF) GENERÁLÁSA ---
@@ -132,7 +130,7 @@ def generate_pdf_invoice(szamlaszam, datum, nev, ico, adresa, email, tel, polozk
         
     return pdf_bytes, pdf_path
 
-# --- EXCEL FRISSÍTÉSE RENDELÉSKOR (KÉSZLET-LEVONÁS & SALES LOG) ---
+# --- EXCEL FRISSÍTÉSE RENDELÉSKOR ---
 def process_order_in_excel(cart_items, order_no, customer_info):
     try:
         xls = pd.ExcelFile(EXCEL_FILE)
@@ -186,48 +184,74 @@ def process_order_in_excel(cart_items, order_no, customer_info):
         return False
 
 
-# --- NÉZET VÁLASZTÓ AZ OLDALSÁVBAN (WEBÁRUHÁZ / ADMIN) ---
+# --- OLDALSÁV / REŽIM ---
 mode = st.sidebar.radio("📌 Režim / Mód:", ["🛒 Obchod / Webshop", "⚙️ Admin / Správa"])
 
+df_products = load_products()
+
+# ==========================================
+# ADMIN MÓD
+# ==========================================
 if mode == "⚙️ Admin / Správa":
     st.title("⚙️ Administrácia & Faktúry / Adminisztráció & Számlák")
     
-    st.subheader("📦 História objednávok / Rendelések előzményei (Sales Log)")
-    df_sales = load_sales_log()
-    
-    if df_sales.empty:
-        st.info("Zatiaľ neboli zaznamenané žiadne objednávky. / Még nincsenek eladások.")
-    else:
-        st.dataframe(df_sales, use_container_width=True)
-        
-        st.divider()
-        st.subheader("📑 Vyhľadanie a stiahnutie faktúry / Számla keresése és letöltése")
-        
-        # Mappában lévő elmentett PDF faktúrák kilistázása
-        invoice_files = [f for f in os.listdir(INVOICES_DIR) if f.endswith('.pdf')]
-        
-        if not invoice_files:
-            st.warning("Žiadne vygenerované faktúry v systéme. / Nincsenek mentett faktúrák.")
-        else:
-            selected_pdf = st.selectbox("Vyberte faktúru na stiahnutie / Válassza ki a letöltendő számlát:", sorted(invoice_files, reverse=True))
+    tab1, tab2 = st.tabs(["📦 Raktárkészlet & Árak", "📑 Rendelések & Faktúrák"])
+
+    with tab1:
+        st.subheader("📊 Raktárkészlet és Árak összehasonlítása")
+        if not df_products.empty:
+            # Megjelenítendő oszlopok kiválasztása az Admin felületen
+            cols_to_show = ['SKU', 'Product Name', 'Current Stock']
+            if 'Unit Price (€)' in df_products.columns:
+                cols_to_show.append('Unit Price (€)')
+            if 'Selling Price (€)' in df_products.columns:
+                cols_to_show.append('Selling Price (€)')
             
-            pdf_full_path = os.path.join(INVOICES_DIR, selected_pdf)
-            with open(pdf_full_path, "rb") as pdf_file:
-                st.download_button(
-                    label=f"📥 Stiahnuť {selected_pdf} / Letöltés",
-                    data=pdf_file.read(),
-                    file_name=selected_pdf,
-                    mime="application/pdf",
-                    type="primary"
-                )
+            admin_df = df_products[cols_to_show].copy()
+            
+            # Oszlopnevek átnevezése a tisztább átláthatóságért
+            rename_dict = {
+                'Unit Price (€)': 'Beszállítói Nettó Ár (€)',
+                'Selling Price (€)': 'Vevői Eladási Ár (€)',
+                'Current Stock': 'Raktárkészlet (ks)'
+            }
+            admin_df = admin_df.rename(columns=rename_dict)
+            
+            st.dataframe(admin_df, use_container_width=True, hide_index=True)
 
+    with tab2:
+        st.subheader("📦 História objednávok / Rendelések előzményei (Sales Log)")
+        df_sales = load_sales_log()
+        
+        if df_sales.empty:
+            st.info("Zatiaľ neboli zaznamenané žiadne objednávky. / Még nincsenek eladások.")
+        else:
+            st.dataframe(df_sales, use_container_width=True)
+            
+            st.divider()
+            st.subheader("📑 Vyhľadanie a stiahnutie faktúry / Számla keresése és letöltése")
+            
+            invoice_files = [f for f in os.listdir(INVOICES_DIR) if f.endswith('.pdf')]
+            
+            if not invoice_files:
+                st.warning("Žiadne vygenerované faktúry v systéme. / Nincsenek mentett faktúrák.")
+            else:
+                selected_pdf = st.selectbox("Vyberte faktúru na stiahnutie / Válassza ki a letöltendő számlát:", sorted(invoice_files, reverse=True))
+                
+                pdf_full_path = os.path.join(INVOICES_DIR, selected_pdf)
+                with open(pdf_full_path, "rb") as pdf_file:
+                    st.download_button(
+                        label=f"📥 Stiahnuť {selected_pdf} / Letöltés",
+                        data=pdf_file.read(),
+                        file_name=selected_pdf,
+                        mime="application/pdf",
+                        type="primary"
+                    )
+
+# ==========================================
+# WEBSHOP MÓD
+# ==========================================
 else:
-    # ADATOK BETÖLTÉSE
-    df_products = load_products()
-
-    # ==========================================
-    # 1. OLDAL: BOLT NÉZET (SHOP)
-    # ==========================================
     if st.session_state.page == "shop":
         st.title("🛒 Ázijský & Filipínsky Tovar / Webshop")
 
@@ -247,7 +271,13 @@ else:
             col_idx = idx % 3
             sku = str(row['SKU'])
             p_name = row['Product Name']
-            p_price = float(row['Unit Price (€)'])
+            
+            # Vevői eladási ár használata (ha nincs Selling Price oszlop, visszalép Unit Price-ra)
+            if 'Selling Price (€)' in row and pd.notna(row['Selling Price (€)']):
+                p_price = float(row['Selling Price (€)'])
+            else:
+                p_price = float(row['Unit Price (€)'])
+                
             p_stock = int(row['Current Stock'])
 
             with cols[col_idx]:
@@ -287,7 +317,12 @@ else:
                 if not prod_match.empty:
                     p_row = prod_match.iloc[0]
                     p_name = p_row['Product Name']
-                    p_price = float(p_row['Unit Price (€)'])
+                    
+                    if 'Selling Price (€)' in p_row and pd.notna(p_row['Selling Price (€)']):
+                        p_price = float(p_row['Selling Price (€)'])
+                    else:
+                        p_price = float(p_row['Unit Price (€)'])
+                        
                     total_p = p_price * qty
                     grand_total += total_p
                     
@@ -302,16 +337,11 @@ else:
             st.sidebar.markdown(f"### **Celkom / Összesen: {grand_total:.2f} €**")
             st.sidebar.write("")
             
-            # --- OBJEDNAŤ GOMB A KOSÁR ALJÁN ---
             if st.sidebar.button("🛍️ Objednať / Megrendelés", type="primary", use_container_width=True):
                 st.session_state.page = "checkout"
                 st.rerun()
 
-    # ==========================================
-    # 2. OLDAL: PÉNZTÁR & ADATOK KITÖLTÉSE (CHECKOUT)
-    # ==========================================
     elif st.session_state.page == "checkout":
-        
         if st.button("⬅️ Späť do obchodu / Vissza a bolthoz"):
             st.session_state.page = "shop"
             st.rerun()
@@ -321,7 +351,6 @@ else:
         if not st.session_state.cart:
             st.warning("Váš košík je prázdny. / A kosár üres.")
         else:
-            # Rendelés összegzése
             st.subheader("🛍️ Zhrnutie objednávky / Rendelés összegzése")
             
             cart_items = []
@@ -332,7 +361,12 @@ else:
                 if not prod_match.empty:
                     p_row = prod_match.iloc[0]
                     p_name = p_row['Product Name']
-                    p_price = float(p_row['Unit Price (€)'])
+                    
+                    if 'Selling Price (€)' in p_row and pd.notna(p_row['Selling Price (€)']):
+                        p_price = float(p_row['Selling Price (€)'])
+                    else:
+                        p_price = float(p_row['Unit Price (€)'])
+                        
                     total_p = p_price * qty
                     grand_total += total_p
                     
@@ -351,7 +385,6 @@ else:
 
             st.divider()
 
-            # Szállítási adatok űrlapja
             st.subheader("📝 Údaje pre doručenie a fakturáciu / Szállítási és számlázási adatok")
 
             with st.form("checkout_form"):
@@ -378,11 +411,9 @@ else:
                     datum = datetime.now().strftime("%Y-%m-%d")
                     customer_info = f"{o_nev}, {o_email}, {o_tel}"
 
-                    # 1. Készlet levonása és Sales Log rögzítése az Excelben
                     success = process_order_in_excel(cart_items, szamlaszam, customer_info)
 
                     if success:
-                        # 2. PDF Faktúra generálása és mentése
                         pdf_bytes, pdf_path = generate_pdf_invoice(
                             szamlaszam, datum, o_nev, o_ico, o_adresa, o_email, o_tel, cart_items, grand_total
                         )
@@ -390,7 +421,6 @@ else:
                         st.balloons()
                         st.success("🎉 Objednávka bola úspešne prijatá a faktúra bola vygenerovaná! / Rendelés elfogadva!")
 
-                        # 3. Vevői letöltési gomb
                         st.download_button(
                             label="📄 Stiahnuť vygenerovanú faktúru (PDF) / Zálohorá Faktúra letöltése",
                             data=pdf_bytes,
@@ -399,5 +429,4 @@ else:
                             type="primary"
                         )
 
-                        # Kosár ürítése rendelés végén
                         st.session_state.cart = {}
