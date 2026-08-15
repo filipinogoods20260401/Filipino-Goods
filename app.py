@@ -639,18 +639,71 @@ elif current_p == "products":
 # 4. KATEGÓRIÁK OLDAL
 elif current_p == "categories":
     st.title(f"📂 {t.get('nav_categories', 'Kategóriák')}")
+    categories = [t["cat_all"]] + sorted(products_df["Category"].dropna().unique().tolist())
+    selected_cat = st.selectbox(t["category_select"], categories)
+    
+    if selected_cat == t["cat_all"]:
+        display_product_grid(products_df)
+    else:
+        filtered_df = products_df[products_df["Category"] == selected_cat]
+        display_product_grid(filtered_df)
 
 # 5. RÓLUNK OLDAL
 elif current_p == "about":
-    st.title(f"ℹ️ {t.get('nav_about', 'Rólunk')}")
+    st.title(f"ℹ️ {t.get('about_title', 'Rólunk')}")
+    st.write(t["about_text"])
+    st.divider()
+    st.subheader(f"📍 {t['contact_info']}")
+    st.write(f"**📍 Adresa / Cím:** {t['address']}")
+    st.write("**✉️ E-mail:** info@filipinogoods.sk")
+    st.write("**📞 Telefón / Telefon:** +421 900 123 456")
 
 # 6. SZABÁLYZATOK OLDAL
 elif current_p == "terms":
-    st.title(f"📜 {t.get('nav_terms', 'Szabályzatok')}")
+    st.title(f"📜 {t.get('policies_title', 'Szabályzatok')}")
+    tab1, tab2, tab3 = st.tabs([t["tab_shipping"], t["tab_payment"], t["tab_privacy"]])
+    with tab1:
+        st.markdown(t["shipping_text"])
+    with tab2:
+        st.markdown(t["payment_text"])
+    with tab3:
+        st.markdown(t["privacy_text"])
 
 # 7. ADMIN OLDAL
 elif current_p == "admin":
-    st.title("⚙️ Adminisztrációs felület")
+    st.title(f"⚙️ {t['admin_title']}")
+    if not st.session_state.admin_logged_in:
+        pwd = st.text_input(t["enter_password"], type="password", key="admin_pwd_input")
+        if st.button(t["login_btn"], key="admin_login_btn"):
+            if pwd == "admin123":
+                st.session_state.admin_logged_in = True
+                st.rerun()
+            else:
+                st.error("Helytelen heslo / Helytelen jelszó!")
+    else:
+        st.success("Prihlásený ako Admin / Bejelentkezve mint Admin")
+        if st.button(t["logout_btn"], key="admin_logout_btn"):
+            st.session_state.admin_logged_in = False
+            st.rerun()
+            
+        st.divider()
+        st.subheader("📊 Raktárkészlet kezelése")
+        edited_df = st.data_editor(
+            products_df,
+            num_rows="dynamic",
+            use_container_width=True,
+            key="admin_data_editor"
+        )
+        if st.button("💾 Módosítások mentése", type="primary", key="save_admin_changes"):
+            try:
+                file_path = "Inventory management spreadsheet base.xlsx"
+                if not os.path.exists(file_path):
+                    file_path = "products.xlsx"
+                edited_df.to_excel(file_path, index=False)
+                st.cache_data.clear()
+                st.success(t["stock_updated"])
+            except Exception as e:
+                st.error(f"Hiba a mentés során: {e}")
 
 
 # --- BEJELENTKEZÉS ÉS PROFIL (OLDALSÁV / SIDEBAR) ---
