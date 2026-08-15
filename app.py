@@ -15,7 +15,8 @@ stripe.api_key = st.secrets.get("STRIPE_SECRET_KEY", "")
 st.set_page_config(
     page_title="Filipino Goods",
     page_icon="🇵🇭",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed" # Mobilon alapból csukja be az oldalsávot
 )
 
 st.markdown("""
