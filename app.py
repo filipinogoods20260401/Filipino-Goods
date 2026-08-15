@@ -11,7 +11,7 @@ import streamlit as st
 # --- OLDAL BEÁLLÍTÁSA ---
 st.set_page_config(
     page_title="Filipino Goods - Online Shop",
-    page_icon="🇵🇭",
+    page_icon="logo.png",  # <- Emotikon helyett a saját logó fájlod neve (vagy 'images/favicon.png')
     layout="wide"
 )
 
