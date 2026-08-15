@@ -22,7 +22,7 @@ NO_IMAGE_URL = 'https://via.placeholder.com/300x200?text=No+Image'
 ADMIN_PASSWORD = st.secrets.get("ADMIN_PASSWORD", "admin")
 TIMEOUT_SECONDS = 600
 
-# Mappák létrehozása
+# Mappák meglétének ellenőrzése
 os.makedirs(INVOICES_DIR, exist_ok=True)
 os.makedirs(IMAGES_DIR, exist_ok=True)
 
@@ -189,7 +189,7 @@ def load_products():
 
     return df
 
-# Session States Inicializálása
+# Session States
 if "cart" not in st.session_state:
     st.session_state.cart = {}
 if "page_view" not in st.session_state:
@@ -198,45 +198,31 @@ if "current_page_idx" not in st.session_state:
     st.session_state.current_page_idx = 0
 if "admin_logged_in" not in st.session_state:
     st.session_state.admin_logged_in = False
+if "selected_lang" not in st.session_state:
+    st.session_state.selected_lang = "SK"
 
 df_products = load_products()
 
-# --- HERO BANNER ---
+# --- 1. HERO BANNER ---
 if os.path.exists(BANNER_FILE):
     st.image(BANNER_FILE, use_container_width=True)
 
-# --- FEJLÉC ---
-head_col1, head_col2, head_col3 = st.columns([1, 2, 2])
+# --- 2. LOGO ---
+if os.path.exists(LOGO_FILE):
+    st.image(LOGO_FILE, width=110)
 
-with head_col1:
-    if os.path.exists(LOGO_FILE):
-        st.image(LOGO_FILE, width=110)
+# --- 3. NAVIGÁCIÓS MENÜ ÉS NYELVVÁLASZTÓ EGY SORBAN ---
+lang_map = {
+    "🇸🇰 SK": "SK",
+    "🇬🇧 EN": "EN",
+    "🇭🇺 HU": "HU"
+}
+lang_options = list(lang_map.keys())
 
-with head_col3:
-    st.write("**Nyelv / Language:**")
-    l_col1, l_col2, l_col3 = st.columns(3)
-    
-    # Session state a kiválasztott nyelv tárolásához
-    if "selected_lang" not in st.session_state:
-        st.session_state.selected_lang = "SK"
+current_code = st.session_state.selected_lang
+current_label = [k for k, v in lang_map.items() if v == current_code][0]
+t = TEXTS[current_code]
 
-    with l_col1:
-        if st.button("🇸🇰 SK", type="primary" if st.session_state.selected_lang == "SK" else "secondary", use_container_width=True):
-            st.session_state.selected_lang = "SK"
-            st.rerun()
-    with l_col2:
-        if st.button("🇬🇧 EN", type="primary" if st.session_state.selected_lang == "EN" else "secondary", use_container_width=True):
-            st.session_state.selected_lang = "EN"
-            st.rerun()
-    with l_col3:
-        if st.button("🇭🇺 HU", type="primary" if st.session_state.selected_lang == "HU" else "secondary", use_container_width=True):
-            st.session_state.selected_lang = "HU"
-            st.rerun()
-
-    # Aktuális szótár beállítása
-    t = TEXTS[st.session_state.selected_lang]
-
-# --- NAVIGÁCIÓS MENÜ ---
 nav_options = [
     t["nav_home"],
     t["nav_products"],
@@ -246,12 +232,11 @@ nav_options = [
     t["nav_admin"]
 ]
 
-# --- GOMBOS NAVIGÁCIÓS MENÜ ---
-nav_cols = st.columns(len(nav_options))
+# 6 navigációs gomb + 1 legördülő nyelvválasztó egy sorban
+all_cols = st.columns([1, 1, 1, 1, 1, 1, 2])
 
 for idx, page_name in enumerate(nav_options):
-    with nav_cols[idx]:
-        # Az éppen aktív oldal gombja primary (kiemelt) színt kap
+    with all_cols[idx]:
         is_active = (st.session_state.current_page_idx == idx)
         if st.button(
             page_name, 
@@ -262,15 +247,29 @@ for idx, page_name in enumerate(nav_options):
             st.session_state.current_page_idx = idx
             st.rerun()
 
-# Az éppen kiválasztott oldal neve
-selected_page = nav_options[st.session_state.current_page_idx]
+with all_cols[6]:
+    selected_lang_label = st.selectbox(
+        f"Jazyk / Language / Nyelv: {current_label}",
+        lang_options,
+        index=lang_options.index(current_label),
+        key="lang_selectbox",
+        label_visibility="visible"
+    )
+    
+    new_lang_code = lang_map[selected_lang_label]
+    if new_lang_code != st.session_state.selected_lang:
+        st.session_state.selected_lang = new_lang_code
+        st.rerun()
 
+selected_page = nav_options[st.session_state.current_page_idx]
+st.divider()
+
+# --- TERMÉKRÁCS MEGJELENÍTÉSE (6 EGYMÁS MELLETT) ---
 def display_product_grid(products_df):
     if products_df.empty:
         st.info("No products found.")
         return
 
-    # 6 oszlopos elrendezés a kisebb képekért
     NUM_COLS = 6
     cols = st.columns(NUM_COLS)
     
@@ -284,16 +283,13 @@ def display_product_grid(products_df):
 
         with cols[col_idx]:
             st.image(img_src, use_container_width=True)
-            
             st.markdown(f"#### {p_name}")
             st.caption(f"🔑 **SKU:** `{sku}`")
             st.write(f"💶 **{t['price']}:** {p_price:.2f} €")
             st.write(f"📦 **{t['stock']}:** {p_stock} ks")
             
             if p_stock > 0:
-                # Mennyiségválasztó és Kosárba gomb egymás mellett (1:2 arányban)
                 q_col, b_col = st.columns([1, 2])
-                
                 with q_col:
                     quantity = st.number_input(
                         t['qty'],
@@ -301,7 +297,7 @@ def display_product_grid(products_df):
                         max_value=p_stock,
                         value=1,
                         key=f"qty_{sku}",
-                        label_visibility="collapsed"  # Elrejtjük a felette lévő feliratot, hogy szépen illeszkedjen a gombhoz
+                        label_visibility="collapsed"
                     )
                 with b_col:
                     if st.button(t['add_to_cart'], key=f"btn_{sku}", use_container_width=True):
@@ -370,10 +366,9 @@ if st.session_state.page_view == "checkout":
         st.dataframe(summary_df, use_container_width=True, hide_index=True)
         st.markdown(f"### **{t['total']}: {grand_total:.2f} €**")
         
-        # Rendelés befejezése gomb (példa)
         if st.button(t['submit_order'], type="primary"):
             st.balloons()
-            st.success("Objednávka bola úspešne odoslaná! / Order placed successfully!")
+            st.success("Objednávka bola úspešne odoslaná!")
             st.session_state.cart = {}
 
 else:
@@ -437,7 +432,6 @@ else:
     elif selected_page == t["nav_admin"]:
         st.title("⚙️ Adminisztrációs Felület")
 
-        # Inaktivitás ellenőrzése
         if st.session_state.admin_logged_in:
             if "last_activity" in st.session_state:
                 elapsed_time = (datetime.now() - st.session_state.last_activity).total_seconds()
@@ -458,7 +452,7 @@ else:
                     st.rerun()
 
             st.divider()
-            st.dataframe(df_products, use_column_width=True)
+            st.dataframe(df_products, use_container_width=True)
 
         else:
             st.subheader("🔐 Bejelentkezés")
