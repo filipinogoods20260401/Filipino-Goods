@@ -35,6 +35,7 @@ def get_product_image(sku):
 # --- NYELVI SZÓTÁR ---
 TEXTS = {
     "SK": {
+        "lang_label": "Jazyk:",
         "nav_home": "Domov",
         "nav_products": "Produkty",
         "nav_categories": "Kategórie",
@@ -74,6 +75,7 @@ TEXTS = {
         "back": "Späť"
     },
     "EN": {
+        "lang_label": "Language:",
         "nav_home": "Home",
         "nav_products": "Products",
         "nav_categories": "Categories",
@@ -113,6 +115,7 @@ TEXTS = {
         "back": "Back"
     },
     "HU": {
+        "lang_label": "Nyelv:",
         "nav_home": "Főoldal",
         "nav_products": "Termékek",
         "nav_categories": "Kategóriák",
@@ -209,14 +212,7 @@ if os.path.exists(BANNER_FILE):
 if os.path.exists(LOGO_FILE):
     st.image(LOGO_FILE, width=110)
 
-# --- 3. NAVIGÁCIÓS MENÜ ÉS NYELVVÁLASZTÓ EGY SORBAN ---
-lang_options = ["SK", "EN", "HU"]
-lang_display_names = {
-    "SK": "Jazyk / Language / Nyelv: SK",
-    "EN": "Jazyk / Language / Nyelv: EN",
-    "HU": "Jazyk / Language / Nyelv: HU"
-}
-
+# --- 3. NAVIGÁCIÓS MENÜ ÉS NYELVVÁLASZTÓ GOMBOK ---
 current_code = st.session_state.selected_lang
 t = TEXTS[current_code]
 
@@ -229,7 +225,8 @@ nav_options = [
     t["nav_admin"]
 ]
 
-all_cols = st.columns([1, 1, 1, 1, 1, 1, 3])
+# Elrendezés: 6 menügomb + 1 szöveg címke + 3 nyelvgomb
+all_cols = st.columns([1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
 
 for idx, page_name in enumerate(nav_options):
     with all_cols[idx]:
@@ -243,19 +240,29 @@ for idx, page_name in enumerate(nav_options):
             st.session_state.current_page_idx = idx
             st.rerun()
 
+# Nyelv címke az aktuálisan kiválasztott nyelven
 with all_cols[6]:
-    selected_code = st.selectbox(
-        "",
-        options=lang_options,
-        format_func=lambda x: lang_display_names[x],
-        index=lang_options.index(current_code),
-        key="lang_selectbox",
-        label_visibility="collapsed"
-    )
-    
-    if selected_code != st.session_state.selected_lang:
-        st.session_state.selected_lang = selected_code
-        st.rerun()
+    st.markdown(f"<div style='text-align: right; padding-top: 6px; font-weight: bold;'>{t['lang_label']}</div>", unsafe_allow_html=True)
+
+# 3 Nyelvgomb zászlókkal és nyelvnevekkel
+languages = [
+    ("SK", "🇸🇰 SK"),
+    ("EN", "🇬🇧 EN"),
+    ("HU", "🇭🇺 HU")
+]
+
+for l_idx, (code, label) in enumerate(languages):
+    with all_cols[7 + l_idx]:
+        is_lang_active = (st.session_state.selected_lang == code)
+        if st.button(
+            label, 
+            key=f"lang_btn_{code}", 
+            type="primary" if is_lang_active else "secondary", 
+            use_container_width=True
+        ):
+            if st.session_state.selected_lang != code:
+                st.session_state.selected_lang = code
+                st.rerun()
 
 selected_page = nav_options[st.session_state.current_page_idx]
 st.divider()
