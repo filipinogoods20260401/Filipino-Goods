@@ -473,14 +473,14 @@ elif st.session_state.current_page == "Admin":
             
         st.write("Skladové zásoby a správa produktov:")
         st.dataframe(products_df)
-        else:
-            st.subheader("🔐 Bejelentkezés")
-            input_pwd = st.text_input("Adja meg az admin jelszót:", type="password")
-        
-        if st.button("Bejelentkezés", type="primary"):
-            if input_pwd == ADMIN_PASSWORD:
-                st.session_state.admin_logged_in = True
-                st.session_state.last_activity = datetime.now()
-                st.success("Sikeres bejelentkezés!")                    st.rerun()
             else:
-                st.error("Hibás jelszó!")
+                st.subheader("🔐 Bejelentkezés")
+                input_pwd = st.text_input("Adja meg az admin jelszót:", type="password")
+        
+            if st.button("Bejelentkezés", type="primary"):
+                if input_pwd == ADMIN_PASSWORD:
+                    st.session_state.admin_logged_in = True
+                    st.session_state.last_activity = datetime.now()
+                    st.success("Sikeres bejelentkezés!")                    st.rerun()
+                else:
+                    st.error("Hibás jelszó!")
