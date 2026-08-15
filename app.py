@@ -45,30 +45,28 @@ def load_products():
     sheet_name = 'Current Stock' if 'Current Stock' in xls.sheet_names else xls.sheet_names[0]
     df = pd.read_excel(xls, sheet_name=sheet_name)
     
-    # Oszlopnevek tisztítása
-    df.columns = [str(col).strip() for col in df.columns]
+    # Oszlopnevek tisztítása (soremelések \n és extra szóközök eltávolítása)
+    df.columns = [str(col).replace('\n', ' ').strip() for col in df.columns]
     
     df = df.dropna(subset=['SKU', 'Product Name']).copy()
     df['SKU'] = df['SKU'].astype(str).str.strip()
     
-    # 1. Vásárlói ár beolvasása (Selling Price)
+    # 1. Vásárlói ár (Selling Price)
     selling_col = None
     for col in df.columns:
-        if col.lower().startswith('selling price'):
+        if 'selling price' in col.lower():
             selling_col = col
             break
             
     if selling_col:
         df['Selling Price (€)'] = df[selling_col].apply(clean_price)
-    elif 'Unit Price (€)' in df.columns:
-        df['Selling Price (€)'] = df['Unit Price (€)'].apply(clean_price)
     else:
         df['Selling Price (€)'] = 0.0
 
-    # 2. Beszállítói nettó ár beolvasása (Suppliers Price (€) / Buying price)
+    # 2. Beszállítói nettó ár (Suppliers Price (€) / Buying price / Unit Price)
     supplier_col = None
     for col in df.columns:
-        if 'supplier' in col.lower() or 'buying' in col.lower() or 'unit price' in col.lower():
+        if any(keyword in col.lower() for keyword in ['supplier', 'buying', 'unit price', 'beszállítói', 'nettó']):
             supplier_col = col
             break
             
@@ -77,7 +75,7 @@ def load_products():
     else:
         df['Buying Price (€)'] = df['Selling Price (€)']
 
-    # 3. Készlet oszlop kinyerése
+    # 3. Raktárkészlet oszlop kinyerése
     stock_col = None
     for c in df.columns:
         if 'stock' in c.lower() or 'pieces' in c.lower() or 'sklad' in c.lower():
@@ -86,8 +84,8 @@ def load_products():
             
     if stock_col:
         df['Current Stock'] = pd.to_numeric(df[stock_col], errors='coerce').fillna(0).astype(int)
-    elif 'Current Stock' not in df.columns:
-        df['Current Stock'] = 10
+    else:
+        df['Current Stock'] = 0
 
     return df
 
