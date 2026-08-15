@@ -18,11 +18,9 @@ LOGO_FILE = 'logo.png'
 BANNER_FILE = 'hero_banner.png'
 NO_IMAGE_URL = 'https://via.placeholder.com/300x200?text=No+Image'
 
-# Admin jelszó lekérése Secrets-ből (Fallback: "admin")
 ADMIN_PASSWORD = st.secrets.get("ADMIN_PASSWORD", "admin")
 TIMEOUT_SECONDS = 600
 
-# Mappák meglétének ellenőrzése
 os.makedirs(INVOICES_DIR, exist_ok=True)
 os.makedirs(IMAGES_DIR, exist_ok=True)
 
@@ -211,12 +209,17 @@ if os.path.exists(BANNER_FILE):
 if os.path.exists(LOGO_FILE):
     st.image(LOGO_FILE, width=110)
 
-# --- NAVIGÁCIÓS MENÜ ÉS NYELVVÁLASZTÓ EGY SORBAN ---
-# 1. Előkészítjük az opciókat a dinamikus címkézéshez
+# --- 3. NAVIGÁCIÓS MENÜ ÉS NYELVVÁLASZTÓ EGY SORBAN ---
+lang_map = {
+    "🇸🇰 SK": "SK",
+    "🇬🇧 EN": "EN",
+    "🇭🇺 HU": "HU"
+}
+
 lang_display_map = {
-    "🇸🇰 SK": f"Jazyk / Language / Nyelv: 🇸🇰 SK",
-    "🇬🇧 EN": f"Jazyk / Language / Nyelv: 🇬🇧 EN",
-    "🇭🇺 HU": f"Jazyk / Language / Nyelv: 🇭🇺 HU"
+    "🇸🇰 SK": "Jazyk / Language / Nyelv: 🇸🇰 SK",
+    "🇬🇧 EN": "Jazyk / Language / Nyelv: 🇬🇧 EN",
+    "🇭🇺 HU": "Jazyk / Language / Nyelv: 🇭🇺 HU"
 }
 reverse_display_map = {v: k for k, v in lang_display_map.items()}
 
@@ -238,7 +241,6 @@ nav_options = [
 # 6 navigációs gomb + 1 legördülő nyelvválasztó egy sorban
 all_cols = st.columns([1, 1, 1, 1, 1, 1, 2.5])
 
-# Navigációs gombok
 for idx, page_name in enumerate(nav_options):
     with all_cols[idx]:
         is_active = (st.session_state.current_page_idx == idx)
@@ -251,7 +253,6 @@ for idx, page_name in enumerate(nav_options):
             st.session_state.current_page_idx = idx
             st.rerun()
 
-# Legördülő nyelvválasztó (címke elrejtve, a felirat benne van a gombban)
 with all_cols[6]:
     selected_display_val = st.selectbox(
         "",
@@ -261,7 +262,6 @@ with all_cols[6]:
         label_visibility="collapsed"
     )
     
-    # Nyelvváltás figyelése
     selected_key = reverse_display_map[selected_display_val]
     new_lang_code = lang_map[selected_key]
     if new_lang_code != st.session_state.selected_lang:
