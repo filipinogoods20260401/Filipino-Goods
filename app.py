@@ -666,7 +666,7 @@ with st.sidebar:
             if st.button(t["checkout_btn"], type="primary", use_container_width=True):
                 st.session_state.show_checkout = True
 
-# --- RENDELÉSI ŰRLAP & FIZETÉSI LEHETŐSÉGEK ---
+# --- RENDELÉSI ŰRLAP & FIZETÉSI LEHETŐSÉGEK (SZLOVÁK SZÁLLÍTÁS + HU/SK FIZETÉS) ---
 if st.session_state.get("show_checkout", False):
     st.divider()
     st.title(f"💳 {t['checkout_title']}")
@@ -684,7 +684,7 @@ if st.session_state.get("show_checkout", False):
 
     u = st.session_state.user or {}
     
-    # 1. Rendelés Összegzése Kártya
+    # 1. Rendelés Összegzése (EUR, HUF, Árfolyam)
     st.subheader(f"🛒 {t['order_summary']}")
     st.markdown(f"### **{t['total']}: {cart_total:.2f} €**")
     st.caption(f"≈ {cart_huf:,.0f} HUF".replace(",", " "))
@@ -703,20 +703,25 @@ if st.session_state.get("show_checkout", False):
             email = st.text_input(f"{t['email']} *", value=u.get("email_key", ""))
             phone = st.text_input(f"{t['phone']} *", value=u.get("phone", ""))
         with col_b:
-            address = st.text_input(f"{t['street_address']} *", value=u.get("address", ""))
+            address = st.text_input(f"{t['street_address']} (Szlovákiai cím) *", value=u.get("address", ""))
             city = st.text_input(f"{t['city']} *", value=u.get("city", ""))
             zip_code = st.text_input(f"{t['zip_code']} *", value=u.get("zip", ""))
             
-        country = st.selectbox(t["country"], ["Slovensko", "Magyarország", "Austria", "Czech Republic"])
+        # Szállítási ország fixen Szlovákia
+        country = st.selectbox(
+            f"{t['country']} (Kizárólag szlovákiai címre szállítunk / Doručenie len na Slovensko)", 
+            ["Slovensko"], 
+            disabled=True
+        )
         
-        # 3 Fizetési Mód Opció
+        # Fizetési módok (Magyar és Szlovák kártyák/számlák támogatásával)
         st.subheader("💳 Fizetési mód / Payment Method")
         payment_method = st.radio(
-            "Válasszon fizetési módot:",
+            "Válasszon fizetési módot (HU és SK bankkártyák/számlák elfogadva):",
             [
-                "💳 Online bankkártyás fizetés (Card Payment / Barion)",
-                "🏦 Banki átutalás (Bank Transfer - Díjmentes)",
-                "🚚 Utánvét (Cash on Delivery +1.50 €)"
+                "💳 Online bankkártya / Bankový prevod online (HU / SK kártyák elfogadva - Barion / GP webpay)",
+                "🏦 Banki átutalás / Bankový prevod (Díjmentes / Bez poplatku)",
+                "🚚 Utánvét / Dobierka (+1.50 €)"
             ]
         )
         
@@ -751,23 +756,23 @@ if st.session_state.get("show_checkout", False):
 
                 st.success(t["order_success"])
                 
-                # Fizetési mód szerinti visszajelzés
-                if "Online bankkártyás" in payment_method:
-                    st.info("💳 **Átirányítás a biztonságos kártyás fizetéshez...**")
-                    # Itt tudsz majd hivatkozni a Barion/Stripe fizetési kapura:
-                    # st.link_button("Fizetés indítása", f"https://payment.example.com/pay?amount={final_total}")
+                # Fizetési információk megjelenítése a választott mód alapján
+                if "Online bankkártya" in payment_method:
+                    st.info(f"💳 **Átirányítás a kártyás fizetési felületre...** Fizetendő: **{final_total:.2f} €** (≈ **{final_huf:,.0f} HUF**)")
+                    # Éles Barion / GP webpay fizetési hivatkozás helye
                 elif "Banki átutalás" in payment_method:
                     st.warning(
-                        f"🏦 **Banki átutalási adatok:**\n\n"
-                        f"- **Fizetendő összeghatár:** {final_total:.2f} € (≈ {final_huf:,.0f} HUF)\n"
-                        f"- **IBAN:** SK89 0000 0000 1234 5678\n"
+                        f"🏦 **Átutalási adatok / Údaje pre platbu:**\n\n"
+                        f"- **Fizetendő összeg / Suma:** {final_total:.2f} € (≈ {final_huf:,.0f} HUF)\n"
+                        f"- **IBAN (SK):** SK89 0000 0000 1234 5678\n"
                         f"- **SWIFT/BIC:** SUBASKBX\n"
-                        f"- **Közlemény:** {email}"
+                        f"- **Közlemény / Variabilný symbol:** {email}\n\n"
+                        f"*Megjegyzés: Magyarországi számláról történő utalás esetén kérjük, EUR alapon indítsa az átutalást (SEPA utalás).* "
                     )
                 else:
-                    st.info(f"🚚 A rendelés összegét (**{final_total:.2f} €** / ≈ **{final_huf:,.0f} HUF**) átvételkor a futárnak tudja kifizetni készpénzzel vagy kártyával.")
+                    st.info(f"🚚 A rendelés összegét (**{final_total:.2f} €** / ≈ **{final_huf:,.0f} HUF**) a szlovákiai átvételkor a futárnak tudja kifizetni készpénzzel vagy kártyával.")
 
-                # Kosár ürítése
+                # Kosár ürítése és checkout bezárása
                 st.session_state.cart = {}
                 st.session_state.show_checkout = False
 
