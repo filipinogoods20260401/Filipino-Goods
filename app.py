@@ -2,10 +2,6 @@ from datetime import datetime
 import os
 import re
 import pandas as pd
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
 import streamlit as st
 
 # --- OLDAL BEÁLLÍTÁSA ---
@@ -22,13 +18,15 @@ LOGO_FILE = 'logo.png'
 BANNER_FILE = 'hero_banner.png'
 NO_IMAGE_URL = 'https://via.placeholder.com/300x200?text=No+Image'
 
+# Admin jelszó beállítása
+ADMIN_PASSWORD = "admin"  # ⚠️ Itt módosíthatod a saját jelszavadra!
+
 if not os.path.exists(INVOICES_DIR):
     os.makedirs(INVOICES_DIR)
 
 if not os.path.exists(IMAGES_DIR):
     os.makedirs(IMAGES_DIR)
 
-# --- SEGÉDFÜGGVÉNY A TERMÉKKÉP MEGKERESÉSÉRE ---
 def get_product_image(sku):
     sku_str = str(sku).strip()
     for ext in ['.jpg', '.jpeg', '.png', '.webp']:
@@ -37,7 +35,7 @@ def get_product_image(sku):
             return img_path
     return NO_IMAGE_URL
 
-# --- NYELVI SZÓTÁR (SK / EN / HU) ---
+# --- NYELVI SZÓTÁR ---
 TEXTS = {
     "SK": {
         "nav_home": "🏠 Domov",
@@ -75,15 +73,7 @@ TEXTS = {
         "payment_text": "- **Bankový prevod:** Na základe vygenerovanej zálohovej faktúry.\n- **Dobierka:** Platba pri prevzatí (+1.50 €).",
         "privacy_text": "Vaše osobné údaje používame výhradne na spracovanie a doručenie vašej objednávky.",
         "checkout_title": "📋 Dokončenie objednávky",
-        "customer_details": "📝 Údaje pre doručenie a fakturáciu",
-        "name": "Meno a priezvisko / Názov firmy*",
-        "email": "E-mail*",
-        "phone": "Telefón*",
-        "address_label": "Adresa (Ulica, PSČ, Mesto)*",
-        "ico": "IČO / DIČ (voliteľné)",
         "submit_order": "✅ Odeslať objednávku",
-        "success_msg": "🎉 Objednávka bola úspešne prijatá!",
-        "download_inv": "📄 Stiahnuť faktúru (PDF)",
         "back": "⬅️ Späť"
     },
     "EN": {
@@ -122,15 +112,7 @@ TEXTS = {
         "payment_text": "- **Bank Transfer:** Based on the generated proforma invoice.\n- **Cash on Delivery:** Pay upon delivery (+€1.50).",
         "privacy_text": "We use your personal data exclusively to process and deliver your order.",
         "checkout_title": "📋 Complete Your Order",
-        "customer_details": "📝 Delivery & Billing Address",
-        "name": "Full Name / Company Name*",
-        "email": "E-mail*",
-        "phone": "Phone*",
-        "address_label": "Address (Street, ZIP, City)*",
-        "ico": "Company ID / Tax ID (optional)",
         "submit_order": "✅ Place Order",
-        "success_msg": "🎉 Order successfully placed!",
-        "download_inv": "📄 Download Invoice (PDF)",
         "back": "⬅️ Back"
     },
     "HU": {
@@ -139,7 +121,7 @@ TEXTS = {
         "nav_categories": "📂 Kategóriák",
         "nav_about": "ℹ️ Rólunk",
         "nav_policies": "📜 Szabályzatok",
-        "nav_admin": "⚙️ Adminisztráció",
+        "nav_admin": "⚙️ Admin",
         "welcome_title": "Üdvözöljük a Filipino Goods webáruházban!",
         "welcome_sub": "Eredeti filippínó élelmiszerek és termékek egyenesen az Ön otthonába.",
         "featured_title": "🔥 Kiemelt Termékek",
@@ -169,20 +151,11 @@ TEXTS = {
         "payment_text": "- **Banki átutalás:** A kiállított díjbekérő alapján.\n- **Utánvét:** Fizetés átvételkor a futárnál (+1.50 €).",
         "privacy_text": "Személyes adatait kizárólag a megrendelés feldolgozásához és kiszállításához használjuk fel.",
         "checkout_title": "📋 Rendelés Befejezése",
-        "customer_details": "📝 Szállítási és Számlázási Adatok",
-        "name": "Név / Cégnév*",
-        "email": "E-mail*",
-        "phone": "Telefonszám*",
-        "address_label": "Cím (Utca, házszám, irányítószám, város)*",
-        "ico": "Cégszám / Adószám (opcionális)",
         "submit_order": "✅ Rendelés Elküldése",
-        "success_msg": "🎉 Rendelését sikeresen rögzítettük!",
-        "download_inv": "📄 Díjbekérő / Számla letöltése (PDF)",
         "back": "⬅️ Vissza"
     }
 }
 
-# --- ÁR TISZTÍTÁS ---
 def clean_price(val):
     if pd.isna(val):
         return 0.0
@@ -192,7 +165,6 @@ def clean_price(val):
     match = re.search(r"[-+]?\d*\.\d+|\d+", val_str)
     return float(match.group()) if match else 0.0
 
-# --- EXCEL ADATOK BETÖLTÉSE ---
 @st.cache_data(ttl=2)
 def load_products():
     if not os.path.exists(EXCEL_FILE):
@@ -222,11 +194,13 @@ if "page_view" not in st.session_state:
     st.session_state.page_view = "shop"
 if "current_page_idx" not in st.session_state:
     st.session_state.current_page_idx = 0
+if "admin_logged_in" not in st.session_state:
+    st.session_state.admin_logged_in = False
 
 df_products = load_products()
 
 # ==========================================
-# VÍZSZINTES FEJLÉC (TOP BAR)
+# FEJLÉC
 # ==========================================
 head_col1, head_col2, head_col3 = st.columns([1, 3, 1])
 
@@ -243,7 +217,7 @@ with head_col3:
         lang_code = "HU"
     t = TEXTS[lang_code]
 
-# VÍZSZINTES MENÜSÁV
+# MENÜSÁV
 nav_options = [
     t["nav_home"],
     t["nav_products"],
@@ -253,7 +227,6 @@ nav_options = [
     t["nav_admin"]
 ]
 
-# Rádiógomb szinkronizálása az index alapján
 selected_page = st.radio(
     "", 
     nav_options, 
@@ -261,11 +234,9 @@ selected_page = st.radio(
     horizontal=True
 )
 
-# Frissítjük az indexet, ha a felhasználó közvetlenül a rádiógombra kattintott
 st.session_state.current_page_idx = nav_options.index(selected_page)
 st.divider()
 
-# --- TERMÉKEK MEGJELENÍTÉSE RÁCSBAN ---
 def display_product_grid(products_df):
     if products_df.empty:
         st.info("No products found.")
@@ -302,7 +273,6 @@ def display_product_grid(products_df):
                 st.error(t['out_of_stock'])
             st.divider()
 
-# --- KOSÁR MODUL ---
 def display_cart_section():
     with st.expander(f"🛒 {t['cart_title']} ({sum(st.session_state.cart.values())} termék)", expanded=bool(st.session_state.cart)):
         if not st.session_state.cart:
@@ -369,22 +339,20 @@ else:
         if os.path.exists(BANNER_FILE):
             st.image(BANNER_FILE, use_container_width=True)
             
-            # Gombok a banner alatt, hibamentes navigálással
             btn_col1, btn_col2, _ = st.columns([1, 1, 2])
             with btn_col1:
                 if st.button("🛍️ SHOP NOW", type="primary", use_container_width=True):
-                    st.session_state.current_page_idx = 1 # Választás a 'Produkty' (index 1) oldalra
+                    st.session_state.current_page_idx = 1
                     st.rerun()
             with btn_col2:
                 if st.button("🤍 OUR STORY", use_container_width=True):
-                    st.session_state.current_page_idx = 3 # Választás az 'O nás' (index 3) oldalra
+                    st.session_state.current_page_idx = 3
                     st.rerun()
         else:
             st.title(t["welcome_title"])
 
         st.divider()
 
-        # Vásárlási előnyök
         col_b1, col_b2, col_b3 = st.columns(3)
         with col_b1:
             st.success("🚚 **Gyors Szállítás**\n\n2-4 munkanapon belül, 50 € felett ingyenes!")
@@ -439,7 +407,29 @@ else:
             st.markdown(t["privacy_text"])
         display_cart_section()
 
-    # 6. ⚙️ ADMIN
+    # 6. ⚙️ ADMIN (JELSZÓVAL VÉDETT)
     elif selected_page == t["nav_admin"]:
-        st.title("⚙️ Admin Dashboard")
-        st.dataframe(df_products, use_container_width=True)
+        st.title("⚙️ Adminisztrációs Felület")
+
+        if not st.session_state.admin_logged_in:
+            st.subheader("🔐 Bejelentkezés")
+            input_pwd = st.text_input("Adja meg az admin jelszót:", type="password")
+            
+            if st.button("Bejelentkezés", type="primary"):
+                if input_pwd == ADMIN_PASSWORD:
+                    st.session_state.admin_logged_in = True
+                    st.success("Sikeres bejelentkezés!")
+                    st.rerun()
+                else:
+                    st.error("Hibás jelszó!")
+        else:
+            col_adm1, col_adm2 = st.columns([4, 1])
+            with col_adm1:
+                st.write("Üdvözöljük az Adminisztrációs felületen!")
+            with col_adm2:
+                if st.button("🔒 Kijelentkezés"):
+                    st.session_state.admin_logged_in = False
+                    st.rerun()
+
+            st.divider()
+            st.dataframe(df_products, use_container_width=True)
