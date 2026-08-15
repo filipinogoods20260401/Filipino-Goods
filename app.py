@@ -611,6 +611,9 @@ st.divider()
 # Jelenlegi oldal meghatározása (alapértelmezett: "home")
 current_p = st.session_state.get("page", st.session_state.get("current_page", "home")).lower()
 
+if current_p == "cart" or st.session_state.get("show_checkout", False):
+    render_checkout_page()
+
 # 1. KOSÁR / CHECKOUT OLDAL
 if current_p == "cart" or st.session_state.get("show_checkout", False):
     st.divider()
