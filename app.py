@@ -601,23 +601,21 @@ with st.sidebar:
                         # Ellenőrizzük az összes kötelező mezőt
                         if not all([reg_name, reg_email, reg_password, reg_phone, reg_address, reg_city, reg_zip]):
                             st.error("Prosím, vyplňte všetky povinné polia!")
-                        else:
-                            # Regisztráció mentése a session state-be vagy adatbázisba
-                            st.session_state.user = {
-                                "name": reg_name,
-                                "email_key": reg_email,
-                                "phone": reg_phone,
-                                "address": reg_address,
-                                "city": reg_city,
-                                "zip": reg_zip,
-                                "country": reg_country
-                            }
-                            st.success("Úspešná registrácia!")
-                            st.rerun()
-                            }
-                            st.success("Úspešná registrácia!")
-                            st.rerun()
-        st.divider()
+                       else:
+            # Regisztráció mentése a session state-be vagy adatbázisba
+            st.session_state.user = {
+                "name": reg_name,
+                "email_key": reg_email,
+                "phone": reg_phone,
+                "address": reg_address,
+                "city": reg_city,
+                "zip": reg_zip,
+                "country": reg_country
+            }
+            st.success("Úspešná registrácia!")
+            st.rerun()
+
+st.divider()
 
     st.header(f"🛒 {t['cart_title']}")
     
