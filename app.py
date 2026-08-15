@@ -215,18 +215,13 @@ def load_products():
 
     return df
 
-@st.cache_data(ttl=2)
-def load_sales_log():
-    if not os.path.exists(EXCEL_FILE):
-        return pd.DataFrame()
-    xls = pd.ExcelFile(EXCEL_FILE)
-    return pd.read_excel(xls, sheet_name='Sales Log') if 'Sales Log' in xls.sheet_names else pd.DataFrame()
-
 # Session States
 if "cart" not in st.session_state:
     st.session_state.cart = {}
 if "page_view" not in st.session_state:
     st.session_state.page_view = "shop"
+if "current_page_idx" not in st.session_state:
+    st.session_state.current_page_idx = 0
 
 df_products = load_products()
 
@@ -258,7 +253,16 @@ nav_options = [
     t["nav_admin"]
 ]
 
-page = st.radio("", nav_options, horizontal=True, key="top_nav")
+# Rádiógomb szinkronizálása az index alapján
+selected_page = st.radio(
+    "", 
+    nav_options, 
+    index=st.session_state.current_page_idx, 
+    horizontal=True
+)
+
+# Frissítjük az indexet, ha a felhasználó közvetlenül a rádiógombra kattintott
+st.session_state.current_page_idx = nav_options.index(selected_page)
 st.divider()
 
 # --- TERMÉKEK MEGJELENÍTÉSE RÁCSBAN ---
@@ -298,7 +302,7 @@ def display_product_grid(products_df):
                 st.error(t['out_of_stock'])
             st.divider()
 
-# --- KOSÁR MODUL A LAP ALJÁN VAGY KÜLÖN FÜLBEN ---
+# --- KOSÁR MODUL ---
 def display_cart_section():
     with st.expander(f"🛒 {t['cart_title']} ({sum(st.session_state.cart.values())} termék)", expanded=bool(st.session_state.cart)):
         if not st.session_state.cart:
@@ -361,19 +365,19 @@ if st.session_state.page_view == "checkout":
 
 else:
     # 1. 🏠 HOME
-    if page == t["nav_home"]:
+    if selected_page == t["nav_home"]:
         if os.path.exists(BANNER_FILE):
             st.image(BANNER_FILE, use_container_width=True)
             
-            # Gombok a banner alatt
+            # Gombok a banner alatt, hibamentes navigálással
             btn_col1, btn_col2, _ = st.columns([1, 1, 2])
             with btn_col1:
                 if st.button("🛍️ SHOP NOW", type="primary", use_container_width=True):
-                    st.session_state.top_nav = t["nav_products"]
+                    st.session_state.current_page_idx = 1 # Választás a 'Produkty' (index 1) oldalra
                     st.rerun()
             with btn_col2:
                 if st.button("🤍 OUR STORY", use_container_width=True):
-                    st.session_state.top_nav = t["nav_about"]
+                    st.session_state.current_page_idx = 3 # Választás az 'O nás' (index 3) oldalra
                     st.rerun()
         else:
             st.title(t["welcome_title"])
@@ -395,7 +399,7 @@ else:
         display_cart_section()
 
     # 2. 📦 PRODUCTS
-    elif page == t["nav_products"]:
+    elif selected_page == t["nav_products"]:
         st.title(t["all_products"])
         search_query = st.text_input(t["search_ph"], "")
         filtered_df = df_products[
@@ -407,7 +411,7 @@ else:
         display_cart_section()
 
     # 3. 📂 CATEGORIES
-    elif page == t["nav_categories"]:
+    elif selected_page == t["nav_categories"]:
         st.title(t["nav_categories"])
         cats = [t["cat_all"]] + sorted(list(df_products['Category'].unique()))
         selected_cat = st.selectbox(t["category_select"], cats)
@@ -416,7 +420,7 @@ else:
         display_cart_section()
 
     # 4. ℹ️ ABOUT US
-    elif page == t["nav_about"]:
+    elif selected_page == t["nav_about"]:
         st.title(t["about_title"])
         st.write(t["about_text"])
         st.subheader(t["contact_info"])
@@ -424,7 +428,7 @@ else:
         display_cart_section()
 
     # 5. 📜 POLICIES
-    elif page == t["nav_policies"]:
+    elif selected_page == t["nav_policies"]:
         st.title(t["policies_title"])
         tab1, tab2, tab3 = st.tabs([t["tab_shipping"], t["tab_payment"], t["tab_privacy"]])
         with tab1:
@@ -436,6 +440,6 @@ else:
         display_cart_section()
 
     # 6. ⚙️ ADMIN
-    elif page == t["nav_admin"]:
+    elif selected_page == t["nav_admin"]:
         st.title("⚙️ Admin Dashboard")
         st.dataframe(df_products, use_container_width=True)
