@@ -666,12 +666,12 @@ with st.sidebar:
             if st.button(t["checkout_btn"], type="primary", use_container_width=True):
                 st.session_state.show_checkout = True
 
-# --- RENDELÉSI ŰRLAP MODÁLIS / DIALÓGUS ---
+# --- RENDELÉSI ŰRLAP & FIZETÉSI LEHETŐSÉGEK ---
 if st.session_state.get("show_checkout", False):
     st.divider()
     st.title(f"💳 {t['checkout_title']}")
     
-    # Kiszámoljuk a kosár értékét és a forint árat
+    # Kosár értékének kiszámítása
     cart_total = 0.0
     for sku, qty in st.session_state.cart.items():
         product_row = products_df[products_df["SKU"].astype(str) == str(sku)]
@@ -684,16 +684,14 @@ if st.session_state.get("show_checkout", False):
 
     u = st.session_state.user or {}
     
-    # 1. Rendelés Összegzése Kártya
+    # 1. Rendelés Összegzése
     st.subheader(f"🛒 {t['order_summary']}")
-    
-    # Árak megjelenítése a kért sorrendben
     st.markdown(f"### **{t['total']}: {cart_total:.2f} €**")
     st.caption(f"≈ {cart_huf:,.0f} HUF".replace(",", " "))
     st.caption(f"*(1 EUR = {eur_huf:.2f} HUF)*")
     st.divider()
 
-    # 2. Megrendelési Űrlap
+    # 2. Megrendelési és Fizetési Űrlap
     with st.form("checkout_form"):
         st.subheader(t["customer_info"])
         if st.session_state.user:
@@ -710,7 +708,18 @@ if st.session_state.get("show_checkout", False):
             zip_code = st.text_input(f"{t['zip_code']} *", value=u.get("zip", ""))
             
         country = st.selectbox(t["country"], ["Slovensko", "Magyarország", "Austria", "Czech Republic"])
-        payment_method = st.radio(t["payment_method"], [t["pay_bank"], t["pay_cod"]])
+        
+        # Fizetési Mód Kiválasztása
+        st.subheader("💳 Fizetési mód / Payment Method")
+        payment_method = st.radio(
+            "Válasszon fizetési módot:",
+            [
+                "💳 Bankkártyás fizetés (Stripe / Credit Card)",
+                "🏦 Banki átutalás (Bank Transfer)",
+                "🚚 Utánvét (Cash on Delivery +1.50 €)"
+            ]
+        )
+        
         notes = st.text_area(t["order_notes"])
         
         submit = st.form_submit_button(t["submit_order"], type="primary", use_container_width=True)
@@ -719,7 +728,11 @@ if st.session_state.get("show_checkout", False):
             if not (name and email and phone and address and city and zip_code):
                 st.error(t["order_error"])
             else:
-                # Készlet levonása
+                # Utánvét esetén plusz díj felszámolása
+                final_total = cart_total + (1.50 if "Utánvét" in payment_method else 0.0)
+                final_huf = final_total * eur_huf
+
+                # Raktárkészlet frissítése
                 for sku, qty in st.session_state.cart.items():
                     idx = products_df[products_df["SKU"].astype(str) == str(sku)].index
                     if not idx.empty:
@@ -733,12 +746,29 @@ if st.session_state.get("show_checkout", False):
                     st.cache_data.clear()
                 except Exception:
                     pass
-                
+
+                # Sikeres rendelés visszajelzés a választott fizetési mód szerint
                 st.success(t["order_success"])
+                
+                if "Bankkártyás" in payment_method:
+                    st.info("💳 Átirányítás a biztonságos fizetési felületre... (Stripe fizetési link helye)")
+                    # Éles rendszerben itt irányítasz át Stripe Checkout URL-re:
+                    # st.link_button("Fizetés indítása", "https://checkout.stripe.com/...")
+                elif "Banki átutalás" in payment_method:
+                    st.warning(
+                        f"🏦 **Utaláshoz szükséges adatok:**\n\n"
+                        f"- **Összeg:** {final_total:.2f} € (≈ {final_huf:,.0f} HUF)\n"
+                        f"- **IBAN:** SK89 0000 0000 1234 5678\n"
+                        f"- **SWIFT/BIC:** SUBASKBX\n"
+                        f"- **Közlemény:** Order-{email}"
+                    )
+                else:
+                    st.info(f"🚚 A rendelés összegét ({final_total:.2f} €) a futárnak tudja kifizetni átvételkor.")
+
+                # Kosár ürítése
                 st.session_state.cart = {}
                 st.session_state.show_checkout = False
-                st.rerun()
-                
+
     if st.button(f"⬅️ {t['back']}"):
         st.session_state.show_checkout = False
         st.rerun()
