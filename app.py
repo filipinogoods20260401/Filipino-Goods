@@ -289,9 +289,17 @@ def display_product_grid(products_df):
         img_src = get_product_image(sku)
 
         with cols[col_idx]:
-            st.image(img_src, use_container_width=True)
+            # --- FIX MAGASSÁGÚ TERMÉKFOTÓ DOBOZ ---
+            st.markdown(
+                f"""
+                <div style="height: 180px; display: flex; align-items: center; justify-content: center; background-color: #ffffff; border-radius: 8px; padding: 5px; margin-bottom: 10px;">
+                    <img src="{img_src}" style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
             
-            # --- FIX MAGASSÁGÚ CÍM DOBOZ (A teljes név megmarad, a gombok egy vonalba kerülnek) ---
+            # --- FIX MAGASSÁGÚ CÍM DOBOZ ---
             st.markdown(
                 f"""
                 <div style="height: 75px; overflow-y: auto; margin-bottom: 8px;">
