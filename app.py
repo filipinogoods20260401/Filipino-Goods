@@ -852,14 +852,51 @@ elif current_p == "products":
 
 # 4. KATEGÓRIÁK OLDAL
 elif current_p == "categories":
-    st.title(f"📂 {t.get('nav_categories', 'Kategóriák')}")
-    categories = [t["cat_all"]] + sorted(products_df["Category"].dropna().unique().tolist())
-    selected_cat = st.selectbox(t["category_select"], categories)
-    
-    if selected_cat == t["cat_all"]:
+    st.title(f"📁 {t.get('nav_categories', 'Kategóriák')}")
+
+    # Egyedi kategóriák kigyűjtése
+    raw_categories = sorted(products_df["Category"].dropna().unique().tolist())
+    all_label = t.get("cat_all", "Všetky")
+
+    # Kategória kiválasztás tárolása session_state-ben
+    if "selected_cat" not in st.session_state:
+        st.session_state.selected_cat = all_label
+
+    # Kategória képek hozzárendelése (ha külön nevet használsz a fájloknál)
+    category_images = {
+        all_label: "images/cat_all.png",
+    }
+
+    # Kategóriák listája (az "Összes" opcióval az elején)
+    cat_list = [all_label] + raw_categories
+
+    # Oszlopok száma soronként (4 kategória kártya egy sorban)
+    cols_per_row = 4
+    for i in range(0, len(cat_list), cols_per_row):
+        cols = st.columns(cols_per_row)
+        for j, cat_name in enumerate(cat_list[i:i + cols_per_row]):
+            with cols[j]:
+                # Automatikusan megkeresi a képet az images/ mappában a kategória neve alapján
+                img_path = category_images.get(cat_name)
+                if not img_path or not os.path.exists(img_path):
+                    img_path = get_product_image(cat_name)
+
+                st.image(img_path, use_container_width=True)
+                
+                # Gomb a kategória kiválasztásához
+                is_active = (st.session_state.selected_cat == cat_name)
+                btn_type = "primary" if is_active else "secondary"
+                if st.button(cat_name, key=f"cat_btn_{i}_{j}", type=btn_type, use_container_width=True):
+                    st.session_state.selected_cat = cat_name
+                    st.rerun()
+
+    st.divider()
+
+    # Termékek szűrése és megjelenítése
+    if st.session_state.selected_cat == all_label:
         display_product_grid(products_df)
     else:
-        filtered_df = products_df[products_df["Category"] == selected_cat]
+        filtered_df = products_df[products_df["Category"] == st.session_state.selected_cat]
         display_product_grid(filtered_df)
 
 # 5. RÓLUNK OLDAL
@@ -869,8 +906,8 @@ elif current_p == "about":
     st.divider()
     st.subheader(f"📍 {t['contact_info']}")
     st.write(f"**📍 Adresa / Cím:** {t['address']}")
-    st.write("**✉️ E-mail:** info@filipinogoods.sk")
-    st.write("**📞 Telefón / Telefon:** +421 900 123 456")
+    st.write("**✉️ E-mail:** jenoladanyi@filipinogoods.sk")
+    st.write("**📞 Telefón / Telefon:** +421 908 813 657")
 
 # 6. SZABÁLYZATOK OLDAL
 elif current_p == "terms":
