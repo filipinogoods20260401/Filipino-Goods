@@ -11,7 +11,7 @@ import streamlit as st
 # --- OLDAL BEÁLLÍTÁSA ---
 st.set_page_config(
     page_title="Filipino Goods - Online Shop",
-    page_icon="logo.png",  # <- Emotikon helyett a saját logó fájlod neve (vagy 'images/favicon.png')
+    page_icon="logo.png" if os.path.exists("logo.png") else "🇵🇭",
     layout="wide"
 )
 
@@ -19,6 +19,7 @@ EXCEL_FILE = 'Inventory management spreadsheet base.xlsx'
 INVOICES_DIR = 'invoices'
 IMAGES_DIR = 'images'
 LOGO_FILE = 'logo.png'
+BANNER_FILE = 'hero_banner.png'
 NO_IMAGE_URL = 'https://via.placeholder.com/300x200?text=No+Image'
 
 if not os.path.exists(INVOICES_DIR):
@@ -229,6 +230,8 @@ if "cart" not in st.session_state:
     st.session_state.cart = {}
 if "page_view" not in st.session_state:
     st.session_state.page_view = "shop"
+if "current_nav" not in st.session_state:
+    st.session_state.current_nav = None
 
 # --- SIDEBAR NYELVVÁLASZTÓ ---
 if os.path.exists(LOGO_FILE):
@@ -254,7 +257,12 @@ nav_options = [
     t["nav_admin"]
 ]
 
-page = st.sidebar.radio("📌 Navigation:", nav_options)
+if st.session_state.current_nav not in nav_options:
+    st.session_state.current_nav = t["nav_home"]
+
+page = st.sidebar.radio("📌 Navigation:", nav_options, index=nav_options.index(st.session_state.current_nav), key="nav_radio")
+st.session_state.current_nav = page
+
 df_products = load_products()
 
 # --- TERMÉKEK MEGJELENÍTÉSE RÁCSBAN (KÉPEKKEL) ---
@@ -273,7 +281,6 @@ def display_product_grid(products_df):
         img_src = get_product_image(sku)
 
         with cols[col_idx]:
-            # Termékfotó megjelenítése
             st.image(img_src, use_container_width=True)
             st.markdown(f"### {p_name}")
             st.info(f"🔑 **SKU:** `{sku}`")
@@ -513,95 +520,26 @@ if st.session_state.page_view == "checkout":
                     st.session_state.cart = {}
 
 else:
-   # 1. 🏠 HOME (FŐOLDAL)
+    # 1. 🏠 HOME
     if page == t["nav_home"]:
-        # Banner és ráfektetett működő gombok (CSS overlay)
-        st.markdown(
-            """
-            <style>
-            .banner-container {
-                position: relative;
-                width: 100%;
-                max-width: 1200px;
-                margin: 0 auto;
-            }
-            .banner-image {
-                width: 100%;
-                height: auto;
-                display: block;
-                border-radius: 12px;
-            }
-            .overlay-btn-shop {
-                position: absolute;
-                top: 47%;
-                left: 5.7%;
-                width: 12.5%;
-                height: 6.8%;
-                background-color: #d49b28;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                font-weight: bold;
-                font-size: 0.9vw;
-                cursor: pointer;
-                transition: background 0.3s;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                text-decoration: none;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            }
-            .overlay-btn-shop:hover {
-                background-color: #b8831f;
-                color: white;
-            }
-            .overlay-btn-story {
-                position: absolute;
-                top: 56.5%;
-                left: 5.7%;
-                width: 12.5%;
-                height: 6.8%;
-                background-color: #f2ebd9;
-                color: #2b3a55;
-                border: 1.5px solid #2b3a55;
-                border-radius: 8px;
-                font-weight: bold;
-                font-size: 0.9vw;
-                cursor: pointer;
-                transition: background 0.3s;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                text-decoration: none;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            }
-            .overlay-btn-story:hover {
-                background-color: #e3d7bd;
-                color: #2b3a55;
-            }
-            </style>
+        if os.path.exists(BANNER_FILE):
+            st.image(BANNER_FILE, use_container_width=True)
+            
+            # Működő gombok közvetlenül a kép alatt
+            btn_col1, btn_col2, _ = st.columns([1, 1, 2])
+            with btn_col1:
+                if st.button("🛍️ SHOP NOW", type="primary", use_container_width=True):
+                    st.session_state.current_nav = t["nav_products"]
+                    st.rerun()
+            with btn_col2:
+                if st.button("🤍 OUR STORY", use_container_width=True):
+                    st.session_state.current_nav = t["nav_about"]
+                    st.rerun()
+        else:
+            st.title(t["welcome_title"])
+            st.caption(t["welcome_sub"])
 
-            <div class="banner-container">
-                <img src="app/static/hero_banner.png" class="banner-image" onerror="this.src='hero_banner.png';">
-                <a href="?nav=products" target="_self" class="overlay-btn-shop">🛍️ SHOP NOW</a>
-                <a href="?nav=about" target="_self" class="overlay-btn-story">🤍 OUR STORY</a>
-            </div>
-            <br>
-            """,
-            unsafe_allow_html=True
-        )
-
-        # Navigációs kattintás kezelése URL paraméterből
-        query_params = st.query_params
-        if "nav" in query_params:
-            target_nav = query_params["nav"]
-            st.query_params.clear()
-            if target_nav == "products":
-                st.session_state.page_navigation = t["nav_products"]
-                st.rerun()
-            elif target_nav == "about":
-                st.session_state.page_navigation = t["nav_about"]
-                st.rerun()
+        st.divider()
 
         # Vásárlási előnyök (Ikonsor)
         col_b1, col_b2, col_b3 = st.columns(3)
