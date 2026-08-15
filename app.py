@@ -279,15 +279,24 @@ def display_product_grid(products_df):
         st.info("Nincs megjeleníthető termék ezen a listán / raktáron.")
         return
 
-    # A képek 100%-os szélességűek, méretarányosak, nagyobb helyet töltenek ki
+    # Kép és beviteli mező / gomb stílusok
     st.markdown(
         """
         <style>
         [data-testid="stImage"] img {
-            height: 240px !important;
+            height: 220px !important;
             width: 100% !important;
-            object-fit: cover !important;
-            border-radius: 6px;
+            object-fit: contain !important;
+        }
+        /* Számláló beviteli mezőjének fix szélessége (3 számjegyhez) */
+        div[data-testid="stNumberInput"] {
+            max-width: 70px !important;
+            min-width: 65px !important;
+        }
+        /* Gomb belső margói a keskenyebb megjelenéshez */
+        div[data-testid="stButton"] > button {
+            padding-left: 8px !important;
+            padding-right: 8px !important;
         }
         </style>
         """,
@@ -296,7 +305,6 @@ def display_product_grid(products_df):
 
     products_list = available_products.reset_index(drop=True)
     
-    # Soronként 5 termék
     for i in range(0, len(products_list), 5):
         cols = st.columns(5)
         row_chunk = products_list.iloc[i:i+5]
@@ -311,7 +319,6 @@ def display_product_grid(products_df):
 
                 st.image(img_src, use_container_width=True)
                 
-                # Fix magasságú, görgethető címdoboz
                 st.markdown(
                     f"""
                     <div style="height: 65px; overflow-y: auto; margin-bottom: 8px; font-size: 0.9rem; font-weight: bold; line-height: 1.2;">
@@ -325,7 +332,8 @@ def display_product_grid(products_df):
                 st.write(f"**{t['price']}:** {p_price:.2f} €")
                 st.write(f"**{t['stock']}:** {p_stock} ks")
                 
-                q_col, b_col = st.columns([1, 2])
+                # Oszlopok elrendezése a gomb és számláló között
+                q_col, b_col = st.columns([1, 2.2])
                 with q_col:
                     quantity = st.number_input(
                         t['qty'],
@@ -336,7 +344,7 @@ def display_product_grid(products_df):
                         label_visibility="collapsed"
                     )
                 with b_col:
-                    if st.button(t['add_to_cart'], key=f"btn_{sku}_{i}_{col_idx}", use_container_width=True):
+                    if st.button(t['add_to_cart'], key=f"btn_{sku}_{i}_{col_idx}", use_container_width=False):
                         st.session_state.cart[sku] = st.session_state.cart.get(sku, 0) + quantity
                         st.toast(f"✅ Dodané do košíka! ({quantity}x {p_name})")
                         st.rerun()
