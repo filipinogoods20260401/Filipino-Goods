@@ -346,19 +346,7 @@ if st.session_state.page_view == "checkout":
 else:
     # 1. 🏠 HOME
     if selected_page == t["nav_home"]:
-        btn_col1, btn_col2, _ = st.columns([1, 1, 2])
-        with btn_col1:
-            if st.button("🛍️ SHOP NOW", type="primary", use_container_width=True):
-                st.session_state.current_page_idx = 1
-                st.rerun()
-        with btn_col2:
-            if st.button("🤍 OUR STORY", use_container_width=True):
-                st.session_state.current_page_idx = 3
-                st.rerun()
-
-        st.divider()
-
-        col_b1, col_b2, col_b3 = st.columns(3)
+    col_b1, col_b2, col_b3 = st.columns(3)
         with col_b1:
             st.success("🚚 **Gyors Szállítás**\n\n2-4 munkanapon belül, 50 € felett ingyenes!")
         with col_b2:
