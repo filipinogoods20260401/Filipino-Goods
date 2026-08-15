@@ -289,21 +289,14 @@ def display_product_grid(products_df):
         img_src = get_product_image(sku)
 
         with cols[col_idx]:
-            # --- FIX MAGASSÁGÚ TERMÉKFOTÓ DOBOZ ---
-            st.markdown(
-                f"""
-                <div style="height: 180px; display: flex; align-items: center; justify-content: center; background-color: #ffffff; border-radius: 8px; padding: 5px; margin-bottom: 10px;">
-                    <img src="{img_src}" style="max-height: 100%; max-width: 100%; object-fit: contain;">
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+            # --- KÉP MEGJELENÍTÉSE (Gyári Streamlit, biztosan működik helyi fájlokkal) ---
+            st.image(img_src, use_container_width=True)
             
-            # --- FIX MAGASSÁGÚ CÍM DOBOZ ---
+            # --- FIX MAGASSÁGÚ, GÖRGETHETŐ CÍMDOBOZ ---
             st.markdown(
                 f"""
-                <div style="height: 75px; overflow-y: auto; margin-bottom: 8px;">
-                    <h4 style="margin: 0; font-size: 1rem; line-height: 1.25;">{p_name}</h4>
+                <div style="height: 70px; overflow-y: auto; margin-bottom: 8px; font-size: 0.95rem; font-weight: bold; line-height: 1.2;">
+                    {p_name}
                 </div>
                 """, 
                 unsafe_allow_html=True
@@ -332,6 +325,7 @@ def display_product_grid(products_df):
             else:
                 st.error(t['out_of_stock'])
             st.divider()
+            
 def display_cart_section():
     total_items = sum(st.session_state.cart.values())
     with st.expander(f"🛒 {t['cart_title']} ({total_items} termék)", expanded=bool(st.session_state.cart)):
