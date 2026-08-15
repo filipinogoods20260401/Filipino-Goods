@@ -524,7 +524,7 @@ elif st.session_state.current_page == "Admin":
         admin_password = st.text_input(t["enter_password"], type="password")
         
         if st.button(t["login_btn"], type="primary"):
-            if admin_password == "admin123":
+            if admin_password == "Filipinogoods20260401":
                 st.session_state.admin_logged_in = True
                 st.rerun()
             else:
