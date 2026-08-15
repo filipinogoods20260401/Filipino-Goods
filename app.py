@@ -262,9 +262,12 @@ def display_product_grid(products_df):
         st.info("No products found.")
         return
 
-    cols = st.columns(3)
+    # 3 helyett 5 oszlopot használunk, így kisebbek lesznek a kártyák
+    NUM_COLS = 5
+    cols = st.columns(NUM_COLS)
+    
     for idx, row in products_df.reset_index(drop=True).iterrows():
-        col_idx = idx % 3
+        col_idx = idx % NUM_COLS
         sku = str(row['SKU'])
         p_name = row['Product Name']
         p_price = float(row['Selling Price (€)'])
@@ -272,9 +275,12 @@ def display_product_grid(products_df):
         img_src = get_product_image(sku)
 
         with cols[col_idx]:
+            # A képek automatikusan a szűkebb oszlophoz igazodnak
             st.image(img_src, use_container_width=True)
-            st.markdown(f"### {p_name}")
-            st.info(f"🔑 **SKU:** `{sku}`")
+            
+            # Kisebb címsor (####) a kompaktabb megjelenésért
+            st.markdown(f"#### {p_name}")
+            st.caption(f"🔑 **SKU:** `{sku}`")
             st.write(f"💶 **{t['price']}:** {p_price:.2f} €")
             st.write(f"📦 **{t['stock']}:** {p_stock} ks")
             
@@ -286,7 +292,7 @@ def display_product_grid(products_df):
                     value=1,
                     key=f"qty_{sku}"
                 )
-                if st.button(t['add_to_cart'], key=f"btn_{sku}"):
+                if st.button(t['add_to_cart'], key=f"btn_{sku}", use_container_width=True):
                     st.session_state.cart[sku] = st.session_state.cart.get(sku, 0) + quantity
                     st.toast(f"✅ Dodané do košíka! ({quantity}x {p_name})")
                     st.rerun()
