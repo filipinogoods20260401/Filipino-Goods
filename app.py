@@ -462,8 +462,36 @@ def render_checkout_page():
         eur_huf = get_eur_huf_rate()
         cart_huf = cart_total * eur_huf
 
-        st.subheader("📋 Rendelés áttekintése / Prehľad objednávky")
+       st.subheader("📋 Rendelés áttekintése / Prehľad objednávky")
+
+        # Tétel törlése a kosárból (ha a gombra kattintottak)
+        if "delete_sku" in st.session_state:
+            sku_to_delete = st.session_state.delete_sku
+                if sku_to_delete in st.session_state.cart:
+                del st.session_state.cart[sku_to_delete]
+            del st.session_state.delete_sku
+            st.rerun()
+
+        # Tételek kilistázása gombokkal
+        for item in order_items:
+            sku = item['sku']
+            col_name, col_qty, col_price, col_del = st.columns([4, 2, 2, 1])
+    
+            with col_name:
+                st.write(f"**{item['name']}**  \n*(SKU: `{sku}`)*")
         
+            with col_qty:
+                st.write(f"{item['qty']} ks × {item['subtotal']/item['qty']:.2f} €")
+        
+            with col_price:
+                st.write(f"**{item['subtotal']:.2f} €**")
+        
+            with col_del:
+                if st.button("🗑️", key=f"del_{sku}"):
+                    st.session_state.delete_sku = sku
+                    st.rerun()
+
+            st.divider()
         for sku, qty in list(st.session_state.cart.items()):
             product_row = products_df[products_df["SKU"].astype(str) == str(sku)]
             if not product_row.empty:
