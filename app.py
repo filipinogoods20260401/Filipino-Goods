@@ -608,16 +608,11 @@ st.divider()
 
 # --- OLDALAK RENDERELÉSE ---
 
-# Jelenlegi oldal meghatározása (alapértelmezett: "home")
 current_p = st.session_state.get("page", st.session_state.get("current_page", "home")).lower()
 
+# 1. KOSÁR / CHECKOUT OLDAL (Csak a függvényhívás maradjon itt!)
 if current_p == "cart" or st.session_state.get("show_checkout", False):
     render_checkout_page()
-
-# 1. KOSÁR / CHECKOUT OLDAL
-if current_p == "cart" or st.session_state.get("show_checkout", False):
-    st.divider()
-    st.title("🛒 Kosár és Fizetés / Košík a Platba")
 
     if not st.session_state.cart:
         st.warning("A kosár jelenleg üres. / Váš košík je prázdny.")
