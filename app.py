@@ -19,7 +19,7 @@ BANNER_FILE = 'hero_banner.png'
 NO_IMAGE_URL = 'https://via.placeholder.com/300x200?text=No+Image'
 
 # Admin jelszó beállítása
-ADMIN_PASSWORD = "admin"  # ⚠️ Itt módosíthatod a saját jelszavadra!
+ADMIN_PASSWORD = "Filipinogoods20260401"  # ⚠️ Itt módosíthatod a saját jelszavadra!
 
 if not os.path.exists(INVOICES_DIR):
     os.makedirs(INVOICES_DIR)
