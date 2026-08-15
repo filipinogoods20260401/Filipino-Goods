@@ -212,9 +212,9 @@ if os.path.exists(LOGO_FILE):
 # --- 3. NAVIGÁCIÓS MENÜ ÉS NYELVVÁLASZTÓ EGY SORBAN ---
 lang_options = ["SK", "EN", "HU"]
 lang_display_names = {
-    "SK": "Slovenčina (SK)",
-    "EN": "English (EN)",
-    "HU": "Magyar (HU)"
+    "SK": "Jazyk / Language / Nyelv: SK",
+    "EN": "Jazyk / Language / Nyelv: EN",
+    "HU": "Jazyk / Language / Nyelv: HU"
 }
 
 current_code = st.session_state.selected_lang
@@ -229,7 +229,7 @@ nav_options = [
     t["nav_admin"]
 ]
 
-all_cols = st.columns([1, 1, 1, 1, 1, 1, 2.5])
+all_cols = st.columns([1, 1, 1, 1, 1, 1, 3])
 
 for idx, page_name in enumerate(nav_options):
     with all_cols[idx]:
@@ -245,11 +245,12 @@ for idx, page_name in enumerate(nav_options):
 
 with all_cols[6]:
     selected_code = st.selectbox(
-        "Jazyk / Language / Nyelv:",
+        "",
         options=lang_options,
         format_func=lambda x: lang_display_names[x],
         index=lang_options.index(current_code),
-        key="lang_selectbox"
+        key="lang_selectbox",
+        label_visibility="collapsed"
     )
     
     if selected_code != st.session_state.selected_lang:
