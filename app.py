@@ -684,7 +684,7 @@ if st.session_state.get("show_checkout", False):
 
     u = st.session_state.user or {}
     
-    # 1. Rendelés Összegzése
+    # 1. Rendelés Összegzése Kártya
     st.subheader(f"🛒 {t['order_summary']}")
     st.markdown(f"### **{t['total']}: {cart_total:.2f} €**")
     st.caption(f"≈ {cart_huf:,.0f} HUF".replace(",", " "))
@@ -709,13 +709,13 @@ if st.session_state.get("show_checkout", False):
             
         country = st.selectbox(t["country"], ["Slovensko", "Magyarország", "Austria", "Czech Republic"])
         
-        # Fizetési Mód Kiválasztása
+        # 3 Fizetési Mód Opció
         st.subheader("💳 Fizetési mód / Payment Method")
         payment_method = st.radio(
             "Válasszon fizetési módot:",
             [
-                "💳 Bankkártyás fizetés (Stripe / Credit Card)",
-                "🏦 Banki átutalás (Bank Transfer)",
+                "💳 Online bankkártyás fizetés (Card Payment / Barion)",
+                "🏦 Banki átutalás (Bank Transfer - Díjmentes)",
                 "🚚 Utánvét (Cash on Delivery +1.50 €)"
             ]
         )
@@ -728,11 +728,13 @@ if st.session_state.get("show_checkout", False):
             if not (name and email and phone and address and city and zip_code):
                 st.error(t["order_error"])
             else:
-                # Utánvét esetén plusz díj felszámolása
-                final_total = cart_total + (1.50 if "Utánvét" in payment_method else 0.0)
+                # Utánvét felár számítása
+                is_cod = "Utánvét" in payment_method
+                cod_fee = 1.50 if is_cod else 0.0
+                final_total = cart_total + cod_fee
                 final_huf = final_total * eur_huf
 
-                # Raktárkészlet frissítése
+                # Raktárkészlet levonása
                 for sku, qty in st.session_state.cart.items():
                     idx = products_df[products_df["SKU"].astype(str) == str(sku)].index
                     if not idx.empty:
@@ -747,23 +749,23 @@ if st.session_state.get("show_checkout", False):
                 except Exception:
                     pass
 
-                # Sikeres rendelés visszajelzés a választott fizetési mód szerint
                 st.success(t["order_success"])
                 
-                if "Bankkártyás" in payment_method:
-                    st.info("💳 Átirányítás a biztonságos fizetési felületre... (Stripe fizetési link helye)")
-                    # Éles rendszerben itt irányítasz át Stripe Checkout URL-re:
-                    # st.link_button("Fizetés indítása", "https://checkout.stripe.com/...")
+                # Fizetési mód szerinti visszajelzés
+                if "Online bankkártyás" in payment_method:
+                    st.info("💳 **Átirányítás a biztonságos kártyás fizetéshez...**")
+                    # Itt tudsz majd hivatkozni a Barion/Stripe fizetési kapura:
+                    # st.link_button("Fizetés indítása", f"https://payment.example.com/pay?amount={final_total}")
                 elif "Banki átutalás" in payment_method:
                     st.warning(
-                        f"🏦 **Utaláshoz szükséges adatok:**\n\n"
-                        f"- **Összeg:** {final_total:.2f} € (≈ {final_huf:,.0f} HUF)\n"
+                        f"🏦 **Banki átutalási adatok:**\n\n"
+                        f"- **Fizetendő összeghatár:** {final_total:.2f} € (≈ {final_huf:,.0f} HUF)\n"
                         f"- **IBAN:** SK89 0000 0000 1234 5678\n"
                         f"- **SWIFT/BIC:** SUBASKBX\n"
-                        f"- **Közlemény:** Order-{email}"
+                        f"- **Közlemény:** {email}"
                     )
                 else:
-                    st.info(f"🚚 A rendelés összegét ({final_total:.2f} €) a futárnak tudja kifizetni átvételkor.")
+                    st.info(f"🚚 A rendelés összegét (**{final_total:.2f} €** / ≈ **{final_huf:,.0f} HUF**) átvételkor a futárnak tudja kifizetni készpénzzel vagy kártyával.")
 
                 # Kosár ürítése
                 st.session_state.cart = {}
