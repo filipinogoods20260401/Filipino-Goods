@@ -273,60 +273,74 @@ st.divider()
 
 # --- TERMÉKRÁCS MEGJELENÍTÉSE (6 EGYMÁS MELLETT) ---
 def display_product_grid(products_df):
-    # --- RAKTÁRON LÉVŐ TERMÉKEK SZŰRÉSE (A 0 raktárkészletűek rejtése) ---
     available_products = products_df[products_df['Current Stock'] > 0]
 
     if available_products.empty:
         st.info("Nincs megjeleníthető termék ezen a listán / raktáron.")
         return
 
-    NUM_COLS = 6
-    cols = st.columns(NUM_COLS)
+    # Globális CSS a képek egységes magasságához és aránytartásához
+    st.markdown(
+        """
+        <style>
+        [data-testid="stImage"] img {
+            height: 150px !important;
+            object-fit: contain !important;
+            width: 100% !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+    products_list = available_products.reset_index(drop=True)
     
-    for idx, row in available_products.reset_index(drop=True).iterrows():
-        col_idx = idx % NUM_COLS
-        sku = str(row['SKU'])
-        p_name = row['Product Name']
-        p_price = float(row['Selling Price (€)'])
-        p_stock = int(row['Current Stock'])
-        img_src = get_product_image(sku)
+    # Soronkénti 6-os darabolás a tökéletes rácsért
+    for i in range(0, len(products_list), 6):
+        cols = st.columns(6)
+        row_chunk = products_list.iloc[i:i+6]
+        
+        for col_idx, (_, row) in enumerate(row_chunk.iterrows()):
+            with cols[col_idx]:
+                sku = str(row['SKU'])
+                p_name = row['Product Name']
+                p_price = float(row['Selling Price (€)'])
+                p_stock = int(row['Current Stock'])
+                img_src = get_product_image(sku)
 
-        with cols[col_idx]:
-            # Kép megjelenítése
-            st.image(img_src, use_container_width=True)
-            
-            # Fix magasságú, egyenletes címdoboz
-            st.markdown(
-                f"""
-                <div style="height: 70px; overflow-y: auto; margin-bottom: 8px; font-size: 0.95rem; font-weight: bold; line-height: 1.2;">
-                    {p_name}
-                </div>
-                """, 
-                unsafe_allow_html=True
-            )
-            
-            st.caption(f"SKU: `{sku}`")
-            st.write(f"**{t['price']}:** {p_price:.2f} €")
-            st.write(f"**{t['stock']}:** {p_stock} ks")
-            
-            # Mivel csak raktáron lévő termékek jelennek meg, a gombok mindig aktívak
-            q_col, b_col = st.columns([1, 2])
-            with q_col:
-                quantity = st.number_input(
-                    t['qty'],
-                    min_value=1,
-                    max_value=p_stock,
-                    value=1,
-                    key=f"qty_{sku}",
-                    label_visibility="collapsed"
+                st.image(img_src, use_container_width=True)
+                
+                # Fix magasságú, görgethető címdoboz
+                st.markdown(
+                    f"""
+                    <div style="height: 65px; overflow-y: auto; margin-bottom: 8px; font-size: 0.9rem; font-weight: bold; line-height: 1.2;">
+                        {p_name}
+                    </div>
+                    """, 
+                    unsafe_allow_html=True
                 )
-            with b_col:
-                if st.button(t['add_to_cart'], key=f"btn_{sku}", use_container_width=True):
-                    st.session_state.cart[sku] = st.session_state.cart.get(sku, 0) + quantity
-                    st.toast(f"✅ Dodané do košíka! ({quantity}x {p_name})")
-                    st.rerun()
+                
+                st.caption(f"SKU: `{sku}`")
+                st.write(f"**{t['price']}:** {p_price:.2f} €")
+                st.write(f"**{t['stock']}:** {p_stock} ks")
+                
+                q_col, b_col = st.columns([1, 2])
+                with q_col:
+                    quantity = st.number_input(
+                        t['qty'],
+                        min_value=1,
+                        max_value=p_stock,
+                        value=1,
+                        key=f"qty_{sku}_{i}_{col_idx}",
+                        label_visibility="collapsed"
+                    )
+                with b_col:
+                    if st.button(t['add_to_cart'], key=f"btn_{sku}_{i}_{col_idx}", use_container_width=True):
+                        st.session_state.cart[sku] = st.session_state.cart.get(sku, 0) + quantity
+                        st.toast(f"✅ Dodané do košíka! ({quantity}x {p_name})")
+                        st.rerun()
 
-            st.divider()
+                st.divider()
             
 def display_cart_section():
     total_items = sum(st.session_state.cart.values())
