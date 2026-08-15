@@ -490,6 +490,35 @@ def render_checkout_page():
                     except Exception:
                         pass
 
+                    # Új rendelés adatainak összeállítása és elmentése
+                    order_items = []
+                    for sku, qty in st.session_state.cart.items():
+                        p_row = products_df[products_df["SKU"].astype(str) == str(sku)]
+                        if not p_row.empty:
+                            p_name = p_row.iloc[0]["Product Name"]
+                            p_price = float(p_row.iloc[0]["Selling Price (€)"])
+                            order_items.append({
+                                "sku": str(sku),
+                                "name": p_name,
+                                "qty": qty,
+                                "subtotal": p_price * qty
+                            })
+
+                    new_order = {
+                        "id": f"ORD-{len(load_orders()) + 1001}",
+                        "date": pd.Timestamp.now().strftime("%Y-%m-%d %H:%M"),
+                        "name": name,
+                        "email": email,
+                        "phone": phone,
+                        "address": address,
+                        "city": city,
+                        "zip": zip_code,
+                        "payment": payment_method,
+                        "total": final_total,
+                        "items": order_items
+                    }
+                    save_order(new_order)
+
                     st.success("A rendelés sikeresen rögzítve! / Objednávka bola úspešne vytvorená!")
                     st.divider()
                     st.subheader("💳 Fizetési információk / Informácie k platbe")
@@ -731,6 +760,7 @@ elif current_p == "terms":
 # 7. ADMIN OLDAL
 elif current_p == "admin":
     st.title(f"⚙️ {t['admin_title']}")
+    
     if not st.session_state.admin_logged_in:
         pwd = st.text_input(t["enter_password"], type="password", key="admin_pwd_input")
         if st.button(t["login_btn"], key="admin_login_btn"):
@@ -738,7 +768,7 @@ elif current_p == "admin":
                 st.session_state.admin_logged_in = True
                 st.rerun()
             else:
-                st.error("Helytelen heslo / Helytelen jelszó!")
+                st.error("Helytelen jelszó!")
     else:
         st.success("Prihlásený ako Admin / Bejelentkezve mint Admin")
         if st.button(t["logout_btn"], key="admin_logout_btn"):
@@ -746,24 +776,54 @@ elif current_p == "admin":
             st.rerun()
             
         st.divider()
-        st.subheader("📊 Raktárkészlet kezelése")
-        edited_df = st.data_editor(
-            products_df,
-            num_rows="dynamic",
-            use_container_width=True,
-            key="admin_data_editor"
-        )
-        if st.button("💾 Módosítások mentése", type="primary", key="save_admin_changes"):
-            try:
-                file_path = "Inventory management spreadsheet base.xlsx"
-                if not os.path.exists(file_path):
-                    file_path = "products.xlsx"
-                edited_df.to_excel(file_path, index=False)
-                st.cache_data.clear()
-                st.success(t["stock_updated"])
-            except Exception as e:
-                st.error(f"Hiba a mentés során: {e}")
-
+        admin_tab1, admin_tab2 = st.tabs(["📦 Raktárkészlet", "📑 Rendelések & Faktúrák"])
+        
+        with admin_tab1:
+            st.subheader("📊 Raktárkészlet kezelése")
+            edited_df = st.data_editor(
+                products_df,
+                num_rows="dynamic",
+                use_container_width=True,
+                key="admin_data_editor"
+            )
+            if st.button("💾 Módosítások mentése", type="primary", key="save_admin_changes"):
+                try:
+                    file_path = "Inventory management spreadsheet base.xlsx"
+                    if not os.path.exists(file_path):
+                        file_path = "products.xlsx"
+                    edited_df.to_excel(file_path, index=False)
+                    st.session_state.products_df = edited_df
+                    st.cache_data.clear()
+                    st.success(t["stock_updated"])
+                except Exception as e:
+                    st.error(f"Hiba a mentés során: {e}")
+                    
+        with admin_tab2:
+            st.subheader("📋 Beérkezett megrendelések")
+            orders = load_orders()
+            
+            if not orders:
+                st.info("Még nem érkezett megrendelés.")
+            else:
+                for ord_data in reversed(orders):
+                    with st.expander(f"🧾 {ord_data['id']} - {ord_data['name']} ({ord_data['date']}) - {ord_data['total']:.2f} €"):
+                        st.write(f"**Vevő:** {ord_data['name']} ({ord_data['email']}, {ord_data['phone']})")
+                        st.write(f"**Cím:** {ord_data['address']}, {ord_data['city']} {ord_data['zip']}")
+                        st.write(f"**Fizetés:** {ord_data['payment']}")
+                        
+                        st.write("**Tételek:**")
+                        for item in ord_data['items']:
+                            st.write(f"- {item['name']} (SKU: {item['sku']}) - {item['qty']} ks x {item['subtotal']:.2f} €")
+                        
+                        # PDF Faktúra Letöltése gomb
+                        pdf_buffer = generate_pdf_invoice(ord_data)
+                        st.download_button(
+                            label="📄 Faktúra / Számla letöltése (PDF)",
+                            data=pdf_buffer,
+                            file_name=f"faktura_{ord_data['id']}.pdf",
+                            mime="application/pdf",
+                            key=f"dl_pdf_{ord_data['id']}"
+                        )
 
 # --- BEJELENTKEZÉS ÉS PROFIL (OLDALSÁV / SIDEBAR) ---
 with st.sidebar:
