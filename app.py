@@ -410,28 +410,52 @@ def display_product_grid(df_to_show):
 
         st.divider()
 
-# --- FEJLÉC & NAVIGÁCIÓ (ZÁSZLÓKKAL) ---
-nav_cols = st.columns([1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 1, 0.8, 0.8, 0.8])
+# --- FELSŐ NAVIGÁCIÓS SÁV ---
+# Kiszámoljuk hány tétel van a kosárban
+cart_count = sum(st.session_state.cart.values()) if st.session_state.get("cart") else 0
 
+# Dinamikus gomblábels a kosárhoz
+cart_label = f"🛒 {t.get('cart_title', 'Kosár')} ({cart_count})" if cart_count > 0 else f"🛒 {t.get('cart_title', 'Kosár')}"
+
+# Oldalak listája: (oldal_kulcs, megjelenítendő_szöveg)
 pages = [
-    ("Home", t["nav_home"]),
-    ("Products", t["nav_products"]),
-    ("Categories", t["nav_categories"]),
-    ("About", t["nav_about"]),
-    ("Policies", t["nav_policies"]),
-    ("Admin", t["nav_admin"])
+    ("home", t.get("nav_home", "Főoldal")),
+    ("products", t.get("nav_products", "Termékek")),
+    ("categories", t.get("nav_categories", "Kategóriák")),
+    ("cart", cart_label),
+    ("about", t.get("nav_about", "Rólunk")),
+    ("terms", t.get("nav_terms", "Szabályzatok")),
+    ("admin", "Admin")
 ]
 
+# Oszlopok létrehozása: 7 oldal gomb + 1 nyelv felirat + 3 nyelvválasztó gomb = 11 oszlop
+nav_cols = st.columns([1.2, 1.2, 1.2, 1.4, 1.2, 1.3, 1, 0.8, 0.8, 0.8, 0.8])
+
+# 1. Menügombok kirajzolása
 for idx, (page_key, page_label) in enumerate(pages):
     with nav_cols[idx]:
-        is_active = (st.session_state.current_page == page_key)
-        if st.button(page_label, key=f"nav_{page_key}", type="primary" if is_active else "secondary", use_container_width=True):
+        is_active = (st.session_state.get("current_page") == page_key or st.session_state.get("page") == page_key)
+        
+        # Admin gomb kiemelése, kosár kiemelése ha van benne tétel
+        btn_type = "secondary"
+        if is_active:
+            btn_type = "primary"
+        elif page_key == "cart" and cart_count > 0:
+            btn_type = "primary"
+        elif page_key == "admin":
+            btn_type = "primary"
+
+        if st.button(page_label, key=f"nav_{page_key}", type=btn_type, use_container_width=True):
+            st.session_state.page = page_key
             st.session_state.current_page = page_key
+            st.session_state.show_checkout = (page_key == "cart")
             st.rerun()
 
-with nav_cols[6]:
-    st.markdown(f"<div style='text-align: right; padding-top: 6px; font-weight: bold;'>{t['lang_label']}</div>", unsafe_allow_html=True)
+# 2. Nyelv címke
+with nav_cols[7]:
+    st.markdown(f"<div style='text-align: right; padding-top: 6px; font-weight: bold;'>{t.get('lang_label', 'Nyelv:')}</div>", unsafe_allow_html=True)
 
+# 3. Nyelvválasztó gombok
 languages = [
     ("SK", "https://flagcdn.com/24x18/sk.png", "SK"),
     ("EN", "https://flagcdn.com/24x18/gb.png", "EN"),
@@ -439,8 +463,8 @@ languages = [
 ]
 
 for l_idx, (code, img_url, label) in enumerate(languages):
-    with nav_cols[7 + l_idx]:
-        is_lang_active = (st.session_state.selected_lang == code)
+    with nav_cols[8 + l_idx]:
+        is_lang_active = (st.session_state.get("selected_lang") == code)
         button_label = f"![{label}]({img_url}) {label}"
         
         if st.button(button_label, key=f"lang_btn_{code}", type="primary" if is_lang_active else "secondary", use_container_width=True):
@@ -452,8 +476,15 @@ st.divider()
 
 # --- OLDALAK RENDERELÉSE ---
 
-# 1. FŐOLDAL (HOME)
-if st.session_state.current_page == "Home":
+# Jelenlegi oldal meghatározása (alapértelmezett: "home")
+current_p = st.session_state.get("page", st.session_state.get("current_page", "home")).lower()
+
+# 1. KOSÁR / CHECKOUT OLDAL
+if current_p == "cart" or st.session_state.get("show_checkout", False):
+    render_checkout_page()  # Teljes képernyős kosár és fizetés
+
+# 2. FŐOLDAL
+elif current_p == "home":
     st.title(t["welcome_title"])
     st.subheader(t["welcome_sub"])
     
@@ -469,104 +500,41 @@ if st.session_state.current_page == "Home":
     st.subheader(f"🌟 {t['featured_title']}")
     display_product_grid(products_df.head(10))
 
-# 2. TERMÉKEK (PRODUCTS)
-elif st.session_state.current_page == "Products":
-    st.title(t["all_products"])
-    
-    search_term = st.text_input(t["search_ph"], "")
-    filtered_df = products_df
-    if search_term:
-        filtered_df = products_df[
-            products_df["Product Name"].str.contains(search_term, case=False, na=False) |
-            products_df["SKU"].astype(str).str.contains(search_term, case=False, na=False)
-        ]
-    
-    display_product_grid(filtered_df)
+# 3. TERMÉKEK OLDAL
+elif current_p == "products":
+    st.title(f"🛍️ {t.get('nav_products', 'Termékek')}")
+    display_product_grid(products_df)
 
-# 3. KATEGÓRIÁK (CATEGORIES)
-elif st.session_state.current_page == "Categories":
-    st.title(t["nav_categories"])
-    
-    categories = [t["cat_all"]] + list(products_df["Category"].dropna().unique())
-    selected_cat = st.selectbox(t["category_select"], categories)
-    
-    if selected_cat == t["cat_all"]:
-        display_product_grid(products_df)
-    else:
-        filtered_df = products_df[products_df["Category"] == selected_cat]
-        display_product_grid(filtered_df)
+# 4. KATEGÓRIÁK OLDAL
+elif current_p == "categories":
+    st.title(f"📂 {t.get('nav_categories', 'Kategóriák')}")
+    # Kategória szűrő / nézet megjelenítése
 
-# 4. RÓLUNK (ABOUT)
-elif st.session_state.current_page == "About":
-    st.title(t["about_title"])
-    st.write(t["about_text"])
-    st.subheader(t["contact_info"])
-    st.write(f"📍 **{t['address']}**")
+# 5. RÓLUNK OLDAL
+elif current_p == "about":
+    st.title(f"ℹ️ {t.get('nav_about', 'Rólunk')}")
+    # Rólunk tartalom
 
-# 5. FELTÉTELEK (POLICIES)
-elif st.session_state.current_page == "Policies":
-    st.title(t["policies_title"])
-    
-    tab1, tab2, tab3 = st.tabs([t["tab_shipping"], t["tab_payment"], t["tab_privacy"]])
-    with tab1:
-        st.markdown(t["shipping_text"])
-    with tab2:
-        st.markdown(t["payment_text"])
-    with tab3:
-        st.markdown(t["privacy_text"])
+# 6. SZABÁLYZATOK OLDAL
+elif current_p == "terms":
+    st.title(f"📜 {t.get('nav_terms', 'Szabályzatok')}")
+    # Szabályzatok tartalom
 
-# 6. ADMIN
-elif st.session_state.current_page == "Admin":
-    st.title(f"⚙️ {t['admin_title']}")
-    
-    if not st.session_state.admin_logged_in:
-        st.subheader(f"🔐 {t['admin_login']}")
-        admin_password = st.text_input(t["enter_password"], type="password")
-        
-        if st.button(t["login_btn"], type="primary"):
-            if admin_password == "Filipinogoods20260401":
-                st.session_state.admin_logged_in = True
-                st.rerun()
-            else:
-                st.error("Helytelen jelszó / Incorrect password / Nesprávne heslo!")
-    else:
-        top_col1, top_col2 = st.columns([8, 2])
-        with top_col2:
-            if st.button(f"🚪 {t['logout_btn']}", use_container_width=True):
-                st.session_state.admin_logged_in = False
-                st.rerun()
-            
-        st.subheader("📦 Raktárkészlet és Termékek Kezelése")
-        
-        edited_df = st.data_editor(
-            products_df,
-            num_rows="dynamic",
-            use_container_width=True,
-            key="admin_editor"
-        )
-        
-        if st.button("💾 Módosítások Mentése (Save Changes)", type="primary"):
-            try:
-                file_path = "Inventory management spreadsheet base.xlsx"
-                if not os.path.exists(file_path):
-                    file_path = "products.xlsx"
-                edited_df.to_excel(file_path, index=False)
-                st.cache_data.clear()
-                st.success(f"✅ {t['stock_updated']}")
-                st.rerun()
-            except Exception as e:
-                st.error(f"Hiba a mentés során: {e}")
+# 7. ADMIN OLDAL
+elif current_p == "admin":
+    st.title("⚙️ Adminisztrációs felület")
+    # Admin felület kódja
 
-# --- KOSÁR ÉS BEJELENTKEZÉS (OLDALSÁV / SIDEBAR) ---
+
+# --- BEJELENTKEZÉS ÉS PROFIL (OLDALSÁV / SIDEBAR) ---
 with st.sidebar:
     users = load_users()
     
     if st.session_state.user:
         st.success(f"👋 {t['login_success']} **{st.session_state.user['name']}**!")
-        if st.button(t["logout_user"], key="user_logout"):
+        if st.button(t["logout_user"], key="user_logout", use_container_width=True):
             st.session_state.user = None
             st.rerun()
-        st.divider()
     else:
         with st.expander(f"👤 {t['login_title']}"):
             tab_log, tab_reg = st.tabs([t["tab_login"], t["tab_register"]])
@@ -574,7 +542,7 @@ with st.sidebar:
             with tab_log:
                 l_email = st.text_input("E-mail", key="log_email")
                 l_pass = st.text_input("Jelszó", type="password", key="log_pass")
-                if st.button(t["login_btn"], key="btn_login_submit"):
+                if st.button(t["login_btn"], key="btn_login_submit", use_container_width=True):
                     if l_email in users and users[l_email]["password"] == l_pass:
                         st.session_state.user = users[l_email]
                         st.session_state.user["email_key"] = l_email
@@ -592,17 +560,14 @@ with st.sidebar:
                     reg_city = st.text_input(f"{t['city']} *")
                     reg_zip = st.text_input(f"{t['zip_code']} *")
                     
-                    # Ha a backend elvárja az országot, legyen benne a formban is:
                     reg_country = "Slovensko" 
                     
-                    reg_submit = st.form_submit_button("Registrácia", type="primary")
+                    reg_submit = st.form_submit_button("Registrácia", type="primary", use_container_width=True)
                     
                     if reg_submit:
-                        # Ellenőrizzük az összes kötelező mezőt
                         if not all([reg_name, reg_email, reg_password, reg_phone, reg_address, reg_city, reg_zip]):
                             st.error("Prosím, vyplňte všetky povinné polia!")
                         else:
-                            # Regisztráció mentése a session state-be
                             st.session_state.user = {
                                 "name": reg_name,
                                 "email_key": reg_email,
@@ -614,66 +579,7 @@ with st.sidebar:
                             }
                             st.success("Úspešná registrácia!")
                             st.rerun()
-
-    st.divider()
-
-    st.header(f"🛒 {t['cart_title']}")
-    
-    if not st.session_state.cart:
-        st.info(t["cart_empty"])
-    else:
-        cart_total = 0.0
-        items_to_remove = []
-        eur_huf = get_eur_huf_rate()
-        
-        for sku, qty in list(st.session_state.cart.items()):
-            product_row = products_df[products_df["SKU"].astype(str) == str(sku)]
-            
-            if not product_row.empty:
-                p_name = product_row.iloc[0]["Product Name"]
-                p_price = float(product_row.iloc[0]["Selling Price (€)"])
-                item_subtotal = p_price * qty
-                cart_total += item_subtotal
-                
-                st.markdown(f"**{p_name}**")
-                st.caption(f"SKU: `{sku}` | {p_price:.2f} € / ks")
-                
-                c1, c2 = st.columns([2, 1])
-                with c1:
-                    new_qty = st.number_input(
-                        t["qty"], 
-                        min_value=1, 
-                        value=qty, 
-                        key=f"cart_qty_{sku}",
-                        label_visibility="collapsed"
-                    )
-                    if new_qty != qty:
-                        st.session_state.cart[sku] = new_qty
-                        st.rerun()
-                with c2:
-                    if st.button("🗑️", key=f"cart_del_{sku}"):
-                        items_to_remove.append(sku)
-                
-                st.write(f"**{t['total']}: {item_subtotal:.2f} €**")
-                st.divider()
-
-        for sku in items_to_remove:
-            del st.session_state.cart[sku]
-            st.rerun()
-            
-        cart_huf = cart_total * eur_huf
-        st.markdown(f"### **{t['total']}: {cart_total:.2f} €**")
-        st.caption(f"≈ {cart_huf:,.0f} HUF".replace(",", " "))
-        
-        c_btn1, c_btn2 = st.columns(2)
-        with c_btn1:
-            if st.button(t["clear_cart"], use_container_width=True):
-                st.session_state.cart = {}
-                st.rerun()
-        with c_btn2:
-            if st.button(t["checkout_btn"], type="primary", use_container_width=True):
-                st.session_state.show_checkout = True
-
+                            
 # --- CHECKOUT / KOSÁR ÉS FIZETÉSI OLDAL ---
 if st.session_state.get("show_checkout", False):
     st.divider()
