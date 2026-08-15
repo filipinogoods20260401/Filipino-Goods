@@ -246,16 +246,24 @@ nav_options = [
     t["nav_admin"]
 ]
 
-selected_page = st.radio(
-    "", 
-    nav_options, 
-    index=st.session_state.current_page_idx, 
-    horizontal=True,
-    key="nav_radio"
-)
+# --- GOMBOS NAVIGÁCIÓS MENÜ ---
+nav_cols = st.columns(len(nav_options))
 
-st.session_state.current_page_idx = nav_options.index(selected_page)
-st.divider()
+for idx, page_name in enumerate(nav_options):
+    with nav_cols[idx]:
+        # Az éppen aktív oldal gombja primary (kiemelt) színt kap
+        is_active = (st.session_state.current_page_idx == idx)
+        if st.button(
+            page_name, 
+            key=f"nav_btn_{idx}", 
+            type="primary" if is_active else "secondary", 
+            use_container_width=True
+        ):
+            st.session_state.current_page_idx = idx
+            st.rerun()
+
+# Az éppen kiválasztott oldal neve
+selected_page = nav_options[st.session_state.current_page_idx]
 
 def display_product_grid(products_df):
     if products_df.empty:
