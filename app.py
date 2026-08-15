@@ -10,13 +10,14 @@ import streamlit as st
 
 # --- OLDAL BEÁLLÍTÁSA ---
 st.set_page_config(
-    page_title="Filipino Goods Webshop & Admin",
-    page_icon="🛒",
+    page_title="Filipino Goods - Online Shop",
+    page_icon="🇵🇭",
     layout="wide"
 )
 
 EXCEL_FILE = 'Inventory management spreadsheet base.xlsx'
 INVOICES_DIR = 'invoices'
+LOGO_FILE = 'logo.png'  # Helyezd el a logo.png fájlt a gyökérkönyvtárban
 
 if not os.path.exists(INVOICES_DIR):
     os.makedirs(INVOICES_DIR)
@@ -66,7 +67,7 @@ def load_products():
     # 2. Beszállítói nettó ár (Suppliers Price (€) / Buying price / Unit Price)
     supplier_col = None
     for col in df.columns:
-        if any(keyword in col.lower() for keyword in ['suppliers', 'buying', 'unit price', 'beszállítói', 'nettó']):
+        if any(keyword in col.lower() for keyword in ['supplier', 'buying', 'unit price', 'beszállítói', 'nettó']):
             supplier_col = col
             break
             
@@ -123,44 +124,53 @@ def generate_pdf_invoice(szamlaszam, datum, nev, ico, adresa, email, tel, polozk
 
     font_reg, font_bold, font_italic = register_fonts()
 
+    # Logó elhelyezése a PDF számlán (ha létezik a logo.png)
+    if os.path.exists(LOGO_FILE):
+        try:
+            c.drawImage(LOGO_FILE, 450, height - 100, width=90, height=90, preserveAspectRatio=True, mask='auto')
+        except Exception:
+            pass
+
     # Fejléc
-    c.setFont(font_bold, 16)
-    c.drawString(50, height - 50, "ZÁLOHOVÁ FAKTÚRA / DÍJBEKÉRŐ")
+    c.setFont(font_bold, 18)
+    c.drawString(50, height - 50, "FILIPINO GOODS")
+    c.setFont(font_bold, 12)
+    c.drawString(50, height - 68, "ZÁLOHOVÁ FAKTÚRA / DÍJBEKÉRŐ")
     
     c.setFont(font_reg, 10)
-    c.drawString(50, height - 70, f"Číslo faktúry / Számlaszám: {szamlaszam}")
-    c.drawString(50, height - 85, f"Dátum vystavenia / Kiállítás dátuma: {datum}")
+    c.drawString(50, height - 88, f"Číslo faktúry / Számlaszám: {szamlaszam}")
+    c.drawString(50, height - 103, f"Dátum vystavenia / Kiállítás dátuma: {datum}")
 
     # Szállító adatai
     c.setFont(font_bold, 11)
-    c.drawString(50, height - 120, "Dodávateľ / Szállító:")
+    c.drawString(50, height - 135, "Dodávateľ / Szállító:")
     c.setFont(font_reg, 10)
-    c.drawString(50, height - 135, "Slovenský Raktár s.r.o.")
-    c.drawString(50, height - 150, "Hlavná 123, 946 34 Bátorove Kosihy")
-    c.drawString(50, height - 165, "IČO: 12345678 | DIČ: 2021234567")
+    c.drawString(50, height - 150, "Filipino Goods s.r.o.")
+    c.drawString(50, height - 165, "Hlavná 123, 946 34 Bátorove Kosihy")
+    c.drawString(50, height - 180, "IČO: 12345678 | DIČ: 2021234567")
 
     # Vevő adatai
     c.setFont(font_bold, 11)
-    c.drawString(300, height - 120, "Odberateľ / Vevő:")
+    c.drawString(300, height - 135, "Odberateľ / Vevő:")
     c.setFont(font_reg, 10)
-    c.drawString(300, height - 135, f"Meno/Név: {nev}")
+    c.drawString(300, height - 150, f"Meno/Név: {nev}")
     if ico:
-        c.drawString(300, height - 150, f"IČO/DIČ: {ico}")
-    c.drawString(300, height - 165, f"Adresa/Cím: {adresa}")
-    c.drawString(300, height - 180, f"E-mail: {email}")
-    c.drawString(300, height - 195, f"Tel: {tel}")
+        c.drawString(300, height - 165, f"IČO/DIČ: {ico}")
+    c.drawString(300, height - 180, f"Adresa/Cím: {adresa}")
+    c.drawString(300, height - 195, f"E-mail: {email}")
+    c.drawString(300, height - 210, f"Tel: {tel}")
 
     # Táblázat fejléce
-    c.line(50, height - 220, width - 50, height - 220)
+    c.line(50, height - 230, width - 50, height - 230)
     c.setFont(font_bold, 9)
-    c.drawString(50, height - 235, "SKU")
-    c.drawString(150, height - 235, "Názov položky / Termék megnevezése")
-    c.drawString(350, height - 235, "Množstvo")
-    c.drawString(410, height - 235, "Cena/ks (€)")
-    c.drawString(480, height - 235, "Spolu (€)")
-    c.line(50, height - 245, width - 50, height - 245)
+    c.drawString(50, height - 245, "SKU")
+    c.drawString(150, height - 245, "Názov položky / Termék megnevezése")
+    c.drawString(350, height - 245, "Množstvo")
+    c.drawString(410, height - 245, "Cena/ks (€)")
+    c.drawString(480, height - 245, "Spolu (€)")
+    c.line(50, height - 255, width - 50, height - 255)
 
-    y = height - 265
+    y = height - 275
     c.setFont(font_reg, 9)
     for p in polozky:
         c.drawString(50, y, str(p['sku']))
@@ -179,7 +189,7 @@ def generate_pdf_invoice(szamlaszam, datum, nev, ico, adresa, email, tel, polozk
     c.drawString(350, y, f"Celkom k úhrade / Összesen: {sum_total:.2f} €")
 
     c.setFont(font_italic, 9)
-    c.drawString(50, 40, "Ďakujeme za Vašu objednávku! / Köszönjük a rendelését!")
+    c.drawString(50, 40, "Ďakujeme za Vašu objednávku! / Köszönjük a rendelését! - Filipino Goods")
 
     c.save()
     
@@ -243,7 +253,11 @@ def process_order_in_excel(cart_items, order_no, customer_info):
         return False
 
 
-# --- OLDALSÁV / REŽIM ---
+# --- OLDALSÁV / REŽIM & LOGÓ ---
+if os.path.exists(LOGO_FILE):
+    st.sidebar.image(LOGO_FILE, use_container_width=True)
+
+st.sidebar.title("🇵🇭 Filipino Goods")
 mode = st.sidebar.radio("📌 Režim / Mód:", ["🛒 Obchod / Webshop", "⚙️ Admin / Správa"])
 
 df_products = load_products()
@@ -252,7 +266,7 @@ df_products = load_products()
 # ADMIN MÓD
 # ==========================================
 if mode == "⚙️ Admin / Správa":
-    st.title("⚙️ Administrácia & Faktúry / Adminisztráció & Számlák")
+    st.title("⚙️ Filipino Goods - Administrácia & Faktúry")
     
     tab1, tab2 = st.tabs(["📦 Raktárkészlet & Árak", "📑 Rendelések & Faktúrák"])
 
@@ -307,7 +321,16 @@ if mode == "⚙️ Admin / Správa":
 # ==========================================
 else:
     if st.session_state.page == "shop":
-        st.title("🛒 Ázijský & Filipínsky Tovar / Webshop")
+        # Fejléc elrendezés logóval
+        col_logo, col_title = st.columns([1, 4])
+        with col_logo:
+            if os.path.exists(LOGO_FILE):
+                st.image(LOGO_FILE, width=130)
+        with col_title:
+            st.title("Filipino Goods")
+            st.caption("Authentic Philippine Food and Products / Eredeti filippínó termékek")
+
+        st.divider()
 
         search_query = st.text_input("🔍 Hľadať produkt / Keresés (SKU cikkszám vagy Terméknév alapján)...", "")
 
@@ -390,7 +413,7 @@ else:
             st.session_state.page = "shop"
             st.rerun()
 
-        st.title("📋 Dokončenie objednávky / Rendelés véglegesítése")
+        st.title("📋 Dokončenie objednávky - Filipino Goods")
 
         if not st.session_state.cart:
             st.warning("Váš košík je prázdny. / A kosár üres.")
