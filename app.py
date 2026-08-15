@@ -412,21 +412,53 @@ else:
             st.markdown(t["privacy_text"])
         display_cart_section()
 
-    # 6. ⚙️ ADMIN (JELSZÓVAL VÉDETT)
-    elif selected_page == t["nav_admin"]:
-        st.title("⚙️ Adminisztrációs Felület")
+# ==========================================
+# 6. ⚙️ ADMIN (JELSZÓVAL VÉDETT + 10 PERCES TIMEOUT)
+# ==========================================
+elif selected_page == t["nav_admin"]:
+    st.title("⚙️ Adminisztrációs Felület")
 
-        if not st.session_state.admin_logged_in:
-            st.subheader("🔐 Bejelentkezés")
-            input_pwd = st.text_input("Adja meg az admin jelszót:", type="password")
-            
-            if st.button("Bejelentkezés", type="primary"):
-                if input_pwd == ADMIN_PASSWORD:
-                    st.session_state.admin_logged_in = True
-                    st.success("Sikeres bejelentkezés!")
-                    st.rerun()
-                else:
-                    st.error("Hibás jelszó!")
+    # Inaktivitás ellenőrzése (10 perc = 600 másodperc)
+    TIMEOUT_SECONDS = 600
+
+    if st.session_state.admin_logged_in:
+        if "last_activity" in st.session_state:
+            elapsed_time = (datetime.now() - st.session_state.last_activity).total_seconds()
+            if elapsed_time > TIMEOUT_SECONDS:
+                st.session_state.admin_logged_in = False
+                st.warning("⚠️ A munkamenet inaktivitás miatt lejárt (10 perc). Kérjük, jelentkezzen be újra!")
+                st.rerun()
+
+    # Időbélyeg frissítése, ha be van jelentkezve és aktív
+    if st.session_state.admin_logged_in:
+        st.session_state.last_activity = datetime.now()
+
+        # FEJLÉC ÉS KIJELENTKEZÉS GOMB
+        col_adm1, col_adm2 = st.columns([4, 1])
+        with col_adm1:
+            st.write("Üdvözöljük az Adminisztrációs felületen!")
+        with col_adm2:
+            if st.button("🔒 Kijelentkezés"):
+                st.session_state.admin_logged_in = False
+                st.rerun()
+
+        st.divider()
+        st.dataframe(df_products, use_container_width=True)
+
+    else:
+        # BEJELENTKEZÉSI ŰRLAP (HA NINCS BEJELENTKEZVE VAGY LEJÁRT AZ IDŐ)
+        st.subheader("🔐 Bejelentkezés")
+        input_pwd = st.text_input("Adja meg az admin jelszót:", type="password")
+        
+        if st.button("Bejelentkezés", type="primary"):
+            if input_pwd == ADMIN_PASSWORD:
+                st.session_state.admin_logged_in = True
+                st.session_state.last_activity = datetime.now()
+                st.success("Sikeres bejelentkezés!")
+                st.rerun()
+            else:
+                st.error("Hibás jelszó!")
+
         else:
             col_adm1, col_adm2 = st.columns([4, 1])
             with col_adm1:
