@@ -17,10 +17,24 @@ st.set_page_config(
 
 EXCEL_FILE = 'Inventory management spreadsheet base.xlsx'
 INVOICES_DIR = 'invoices'
+IMAGES_DIR = 'images'
 LOGO_FILE = 'logo.png'
+NO_IMAGE_URL = 'https://via.placeholder.com/300x200?text=No+Image'
 
 if not os.path.exists(INVOICES_DIR):
     os.makedirs(INVOICES_DIR)
+
+if not os.path.exists(IMAGES_DIR):
+    os.makedirs(IMAGES_DIR)
+
+# --- SEGÉDFÜGGVÉNY A TERMÉKKÉP MEGKERESÉSÉRE ---
+def get_product_image(sku):
+    sku_str = str(sku).strip()
+    for ext in ['.jpg', '.jpeg', '.png', '.webp']:
+        img_path = os.path.join(IMAGES_DIR, f"{sku_str}{ext}")
+        if os.path.exists(img_path):
+            return img_path
+    return NO_IMAGE_URL
 
 # --- NYELVI SZÓTÁR (SK / EN / HU) ---
 TEXTS = {
@@ -243,7 +257,7 @@ nav_options = [
 page = st.sidebar.radio("📌 Navigation:", nav_options)
 df_products = load_products()
 
-# --- TERMÉKEK MEGJELENÍTÉSE RÁCSBAN ---
+# --- TERMÉKEK MEGJELENÍTÉSE RÁCSBAN (KÉPEKKEL) ---
 def display_product_grid(products_df):
     if products_df.empty:
         st.info("No products found.")
@@ -256,8 +270,11 @@ def display_product_grid(products_df):
         p_name = row['Product Name']
         p_price = float(row['Selling Price (€)'])
         p_stock = int(row['Current Stock'])
+        img_src = get_product_image(sku)
 
         with cols[col_idx]:
+            # Termékfotó megjelenítése
+            st.image(img_src, use_container_width=True)
             st.markdown(f"### {p_name}")
             st.info(f"🔑 **SKU:** `{sku}`")
             st.write(f"💶 **{t['price']}:** {p_price:.2f} €")
