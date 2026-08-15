@@ -186,7 +186,7 @@ def load_products():
     cat_col = next((c for c in df.columns if any(k in c.lower() for k in ['category', 'kategória', 'kategoria', 'type'])), None)
     df['Category'] = df[cat_col].astype(str).str.strip() if cat_col else 'General'
 
-    # Sima 'Selling Price' oszlop eltávolítása (jobbról a 4. oszlop volt)
+    # Sima 'Selling Price' oszlop eltávolítása (jobbról a 4. oszlop)
     if 'Selling Price' in df.columns:
         df = df.drop(columns=['Selling Price'])
 
@@ -205,7 +205,13 @@ if "admin_logged_in" not in st.session_state:
 df_products = load_products()
 
 # ==========================================
-# FEJLÉC
+# 1. LEGÜLÜL: HERO BANNER
+# ==========================================
+if os.path.exists(BANNER_FILE):
+    st.image(BANNER_FILE, use_container_width=True)
+
+# ==========================================
+# 2. FEJLÉC (LOGO ÉS NYELVVÁLASZTÓ)
 # ==========================================
 head_col1, head_col2, head_col3 = st.columns([1, 3, 1])
 
@@ -341,20 +347,15 @@ if st.session_state.page_view == "checkout":
 else:
     # 1. 🏠 HOME
     if selected_page == t["nav_home"]:
-        if os.path.exists(BANNER_FILE):
-            st.image(BANNER_FILE, use_container_width=True)
-            
-            btn_col1, btn_col2, _ = st.columns([1, 1, 2])
-            with btn_col1:
-                if st.button("🛍️ SHOP NOW", type="primary", use_container_width=True):
-                    st.session_state.current_page_idx = 1
-                    st.rerun()
-            with btn_col2:
-                if st.button("🤍 OUR STORY", use_container_width=True):
-                    st.session_state.current_page_idx = 3
-                    st.rerun()
-        else:
-            st.title(t["welcome_title"])
+        btn_col1, btn_col2, _ = st.columns([1, 1, 2])
+        with btn_col1:
+            if st.button("🛍️ SHOP NOW", type="primary", use_container_width=True):
+                st.session_state.current_page_idx = 1
+                st.rerun()
+        with btn_col2:
+            if st.button("🤍 OUR STORY", use_container_width=True):
+                st.session_state.current_page_idx = 3
+                st.rerun()
 
         st.divider()
 
