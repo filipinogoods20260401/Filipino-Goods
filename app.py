@@ -3,6 +3,9 @@ import pandas as pd
 import os
 import json
 import urllib.request
+from io import BytesIO
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 
 # --- OLDAL BEÁLLÍTÁSA ---
 st.set_page_config(
@@ -10,6 +13,62 @@ st.set_page_config(
     page_icon="🇵🇭",
     layout="wide"
 )
+
+# --- ORDERS ADATBÁZIS & FAKTÚRA GENERÁLÓ ---
+ORDERS_FILE = "orders.json"
+
+def load_orders():
+    if os.path.exists(ORDERS_FILE):
+        with open(ORDERS_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
+def save_order(order_data):
+    orders = load_orders()
+    orders.append(order_data)
+    with open(ORDERS_FILE, "w", encoding="utf-8") as f:
+        json.dump(orders, f, ensure_ascii=False, indent=4)
+
+def generate_pdf_invoice(order):
+    buffer = BytesIO()
+    p = canvas.Canvas(buffer, pagesize=letter)
+    
+    # Faktúra Fejléc
+    p.setFont("Helvetica-Bold", 16)
+    p.drawString(100, 750, f"FAKTURA / INVOICE #{order['id']}")
+    
+    p.setFont("Helvetica", 10)
+    p.drawString(100, 730, f"Datum: {order['date']}")
+    p.drawString(100, 715, f"Zakaznik / Customer: {order['name']}")
+    p.drawString(100, 700, f"Adresa / Address: {order['address']}, {order['city']} {order['zip']}")
+    p.drawString(100, 685, f"E-mail: {order['email']} | Tel: {order['phone']}")
+    
+    p.line(100, 670, 500, 670)
+    
+    # Tételek
+    y = 650
+    p.setFont("Helvetica-Bold", 11)
+    p.drawString(100, y, "Polozka / Termek")
+    p.drawString(350, y, "Mnostvo")
+    p.drawString(450, y, "Suma")
+    
+    y -= 20
+    p.setFont("Helvetica", 10)
+    for item in order['items']:
+        p.drawString(100, y, str(item['name'])[:35])
+        p.drawString(350, y, f"{item['qty']} ks")
+        p.drawString(450, y, f"{item['subtotal']:.2f} EUR")
+        y -= 15
+        
+    p.line(100, y, 500, y)
+    y -= 20
+    p.setFont("Helvetica-Bold", 12)
+    p.drawString(100, y, f"SPOLU / OSSZESEN: {order['total']:.2f} EUR")
+    
+    p.showPage()
+    p.save()
+    buffer.seek(0)
+    return buffer
 
 # --- NYELVI SZÓTÁR ---
 TEXTS = {
