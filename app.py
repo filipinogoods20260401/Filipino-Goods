@@ -572,7 +572,22 @@ with col3:
 
     # 6. ⚙️ ADMIN
     elif selected_page == t["nav_admin"]:
-        st.title("⚙️ Adminisztrációs Felület")
+        st.title(f"⚙️ {t['admin_title']}")
+        st.subheader(f"🔐 {t['admin_login']}")
+
+        admin_password = st.text_input(
+            t['enter_password'], 
+            type="password", 
+            key="admin_pwd_input"
+)
+
+if st.button(t['login_btn'], type="primary"):
+    if admin_password == "AZ_ADMIN_JELSZÓD":  # Cseréld ki a saját jelszavadra
+        st.session_state.admin_logged_in = True
+        st.success("Sikeres bejelentkezés!")
+        st.rerun()
+    else:
+        st.error("Nesprávne heslo! / Incorrect password! / Helytelen jelszó!")
 
         if st.session_state.admin_logged_in:
             if "last_activity" in st.session_state:
