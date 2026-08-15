@@ -14,6 +14,34 @@ st.set_page_config(
     layout="wide"
 )
 
+# --- TRÓPUSI TENGERPARTI HÁTTÉR (FÜLÖP-SZIGETEK HANGULAT) ---
+st.markdown(
+    """
+    <style>
+    .stApp {
+        background-image: url("https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1920&auto=format&fit=crop");
+        background-attachment: fixed;
+        background-size: cover;
+        background-position: center;
+    }
+    
+    /* A tartalom olvashatóságának biztosítása félig áttetsző hátterekkel */
+    .stApp > header {
+        background-color: rgba(0, 0, 0, 0);
+    }
+    
+    .main .block-container {
+        background-color: rgba(255, 255, 255, 0.92);
+        padding: 2rem;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        margin-top: 1rem;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # --- ORDERS ADATBÁZIS & FAKTÚRA GENERÁLÓ ---
 ORDERS_FILE = "orders.json"
 
