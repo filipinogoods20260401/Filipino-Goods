@@ -279,14 +279,15 @@ def display_product_grid(products_df):
         st.info("Nincs megjeleníthető termék ezen a listán / raktáron.")
         return
 
-    # Globális CSS a képek egységes magasságához és aránytartásához
+    # A képek 100%-os szélességűek, méretarányosak, nagyobb helyet töltenek ki
     st.markdown(
         """
         <style>
         [data-testid="stImage"] img {
-            height: 165px !important;
-            object-fit: contain !important;
+            height: 240px !important;
             width: 100% !important;
+            object-fit: cover !important;
+            border-radius: 6px;
         }
         </style>
         """,
@@ -295,7 +296,7 @@ def display_product_grid(products_df):
 
     products_list = available_products.reset_index(drop=True)
     
-    # Soronkénti 5-ös darabolás a tökéletes elrendezésért
+    # Soronként 5 termék
     for i in range(0, len(products_list), 5):
         cols = st.columns(5)
         row_chunk = products_list.iloc[i:i+5]
