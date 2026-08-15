@@ -18,6 +18,34 @@ st.set_page_config(
     layout="wide"
 )
 
+st.markdown("""
+<style>
+    /* Menü gombok törésmentesítése és egységesítése */
+    div[data-testid="stHorizontalBlock"] button {
+        white-space: nowrap !important;
+        word-break: normal !important;
+        padding: 4px 10px !important;
+        font-size: 13px !important;
+        min-height: 40px !important;
+    }
+    
+    /* Mobilon gördíthető gombsor */
+    @media (max-width: 768px) {
+        div[data-testid="stHorizontalBlock"] {
+            display: flex !important;
+            flex-wrap: nowrap !important;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 8px;
+        }
+        div[data-testid="stHorizontalBlock"] > div {
+            flex: 0 0 auto !important;
+            width: auto !important;
+        }
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # --- ORDERS ADATBÁZIS & FAKTÚRA GENERÁLÓ ---
 ORDERS_FILE = "orders.json"
 
