@@ -64,14 +64,14 @@ TEXTS = {
         "category_select": "Vyberte kategóriu:",
         "cat_all": "Všetky kategórie",
         "about_title": "ℹ️ O obchode Filipino Goods",
-        "about_text": "Filipino Goods prináša autentické chute Filipín priamo na Slovensko a do strednej Európy. Ponúkame široký výber najobľúbenejších značiek, omáčok, sladkostí a nápojov.",
+        "about_text": "Filipino Goods prináša autentické chute Filipín priamo na Slovensko a do strednej Európy.",
         "contact_info": "📍 Kontakt a adresa",
         "address": "Hlavná 123, 946 34 Bátorove Kosihy, Slovensko",
         "policies_title": "📜 Obchodné podmienky & Pravidlá",
         "tab_shipping": "🚚 Doručenie",
         "tab_payment": "💳 Platba",
         "tab_privacy": "🔒 GDPR & Súkromie",
-        "shipping_text": "- **Kuriér:** 2-4 pracovné dni.\n- **Poštovné:** Od 3.90 €. Pri objednávke nad 50 € je doprava ZADARMO!\n- **Osobný odber:** Bátorove Kosihy (po dohode).",
+        "shipping_text": "- **Kuriér:** 2-4 pracovné dni.\n- **Poštovné:** Od 3.90 €. Pri objednávke nad 50 € je doprava ZADARMO!",
         "payment_text": "- **Bankový prevod:** Na základe vygenerovanej zálohovej faktúry.\n- **Dobierka:** Platba pri prevzatí (+1.50 €).",
         "privacy_text": "Vaše osobné údaje používame výhradne na spracovanie a doručenie vašej objednávky.",
         "checkout_title": "📋 Dokončenie objednávky",
@@ -111,14 +111,14 @@ TEXTS = {
         "category_select": "Select Category:",
         "cat_all": "All Categories",
         "about_title": "ℹ️ About Filipino Goods",
-        "about_text": "Filipino Goods brings the authentic flavors of the Philippines directly to Slovakia and Central Europe. We offer a wide selection of top brands, sauces, sweets, and beverages.",
+        "about_text": "Filipino Goods brings the authentic flavors of the Philippines directly to Slovakia and Central Europe.",
         "contact_info": "📍 Contact Information",
         "address": "Hlavná 123, 946 34 Bátorove Kosihy, Slovakia",
         "policies_title": "📜 Terms & Policies",
         "tab_shipping": "🚚 Delivery",
         "tab_payment": "💳 Payment",
         "tab_privacy": "🔒 Privacy & GDPR",
-        "shipping_text": "- **Courier Delivery:** 2-4 business days.\n- **Shipping Fee:** From €3.90. FREE shipping on orders over €50!\n- **Personal Pickup:** Bátorove Kosihy (by appointment).",
+        "shipping_text": "- **Courier Delivery:** 2-4 business days.\n- **Shipping Fee:** From €3.90. FREE shipping on orders over €50!",
         "payment_text": "- **Bank Transfer:** Based on the generated proforma invoice.\n- **Cash on Delivery:** Pay upon delivery (+€1.50).",
         "privacy_text": "We use your personal data exclusively to process and deliver your order.",
         "checkout_title": "📋 Complete Your Order",
@@ -158,14 +158,14 @@ TEXTS = {
         "category_select": "Válasszon kategóriát:",
         "cat_all": "Összes Kategória",
         "about_title": "ℹ️ A Filipino Goods-ról",
-        "about_text": "A Filipino Goods elhozza a Fülöp-szigetek autentikus ízeit Szlovákiába és Közép-Európába. Kínálatunkban megtalálhatóak a legnépszerűbb márkák, szószok, édességek és hűsítő italok.",
+        "about_text": "A Filipino Goods elhozza a Fülöp-szigetek autentikus ízeit Szlovákiába és Közép-Európába.",
         "contact_info": "📍 Kapcsolat és Cím",
         "address": "Hlavná 123, 946 34 Bátorove Kosihy, Szlovákia",
         "policies_title": "📜 Vásárlási Feltételek & Szabályzatok",
         "tab_shipping": "🚚 Szállítás",
         "tab_payment": "💳 Fizetés",
         "tab_privacy": "🔒 Adatvédelem & GDPR",
-        "shipping_text": "- **Futárszolgálat:** 2-4 munkanap.\n- **Szállítási díj:** 3.90 €-tól. 50 € feletti rendelés esetén INGYENES!\n- **Személyes átvétel:** Bátorove Kosihy (egyeztetés alapján).",
+        "shipping_text": "- **Futárszolgálat:** 2-4 munkanap.\n- **Szállítási díj:** 3.90 €-tól. 50 € feletti rendelés esetén INGYENES!",
         "payment_text": "- **Banki átutalás:** A kiállított díjbekérő alapján.\n- **Utánvét:** Fizetés átvételkor a futárnál (+1.50 €).",
         "privacy_text": "Személyes adatait kizárólag a megrendelés feldolgozásához és kiszállításához használjuk fel.",
         "checkout_title": "📋 Rendelés Befejezése",
@@ -207,9 +207,6 @@ def load_products():
     selling_col = next((c for c in df.columns if 'selling price' in c.lower()), None)
     df['Selling Price (€)'] = df[selling_col].apply(clean_price) if selling_col else 0.0
 
-    supplier_col = next((c for c in df.columns if any(k in c.lower() for k in ['supplier', 'buying', 'unit price', 'beszállítói', 'nettó'])), None)
-    df['Buying Price (€)'] = df[supplier_col].apply(clean_price) if supplier_col else df['Selling Price (€)']
-
     stock_col = next((c for c in df.columns if any(k in c.lower() for k in ['stock', 'pieces', 'sklad'])), None)
     df['Current Stock'] = pd.to_numeric(df[stock_col], errors='coerce').fillna(0).astype(int) if stock_col else 0
 
@@ -230,24 +227,28 @@ if "cart" not in st.session_state:
     st.session_state.cart = {}
 if "page_view" not in st.session_state:
     st.session_state.page_view = "shop"
-if "current_nav" not in st.session_state:
-    st.session_state.current_nav = None
 
-# --- SIDEBAR NYELVVÁLASZTÓ ---
-if os.path.exists(LOGO_FILE):
-    st.sidebar.image(LOGO_FILE, use_container_width=True)
+df_products = load_products()
 
-lang_choice = st.sidebar.selectbox("🌐 Language / Nyelv / Jazyk:", ["🇸🇰 Slovenčina", "🇬🇧 English", "🇭🇺 Magyar"])
+# ==========================================
+# VÍZSZINTES FEJLÉC (TOP BAR)
+# ==========================================
+head_col1, head_col2, head_col3 = st.columns([1, 3, 1])
 
-lang_code = "SK"
-if "English" in lang_choice:
-    lang_code = "EN"
-elif "Magyar" in lang_choice:
-    lang_code = "HU"
+with head_col1:
+    if os.path.exists(LOGO_FILE):
+        st.image(LOGO_FILE, width=110)
 
-t = TEXTS[lang_code]
+with head_col3:
+    lang_choice = st.selectbox("🌐 Nyelv / Language:", ["🇸🇰 SK", "🇬🇧 EN", "🇭🇺 HU"])
+    lang_code = "SK"
+    if "EN" in lang_choice:
+        lang_code = "EN"
+    elif "HU" in lang_choice:
+        lang_code = "HU"
+    t = TEXTS[lang_code]
 
-# NAVIGÁCIÓS MENÜ
+# VÍZSZINTES MENÜSÁV
 nav_options = [
     t["nav_home"],
     t["nav_products"],
@@ -257,15 +258,10 @@ nav_options = [
     t["nav_admin"]
 ]
 
-if st.session_state.current_nav not in nav_options:
-    st.session_state.current_nav = t["nav_home"]
+page = st.radio("", nav_options, horizontal=True, key="top_nav")
+st.divider()
 
-page = st.sidebar.radio("📌 Navigation:", nav_options, index=nav_options.index(st.session_state.current_nav), key="nav_radio")
-st.session_state.current_nav = page
-
-df_products = load_products()
-
-# --- TERMÉKEK MEGJELENÍTÉSE RÁCSBAN (KÉPEKKEL) ---
+# --- TERMÉKEK MEGJELENÍTÉSE RÁCSBAN ---
 def display_product_grid(products_df):
     if products_df.empty:
         st.info("No products found.")
@@ -302,155 +298,36 @@ def display_product_grid(products_df):
                 st.error(t['out_of_stock'])
             st.divider()
 
-# --- SIDEBAR KOSÁR ---
-def display_sidebar_cart():
-    st.sidebar.divider()
-    st.sidebar.header(t['cart_title'])
+# --- KOSÁR MODUL A LAP ALJÁN VAGY KÜLÖN FÜLBEN ---
+def display_cart_section():
+    with st.expander(f"🛒 {t['cart_title']} ({sum(st.session_state.cart.values())} termék)", expanded=bool(st.session_state.cart)):
+        if not st.session_state.cart:
+            st.info(t['cart_empty'])
+        else:
+            grand_total = 0.0
+            for sku, qty in list(st.session_state.cart.items()):
+                prod_match = df_products[df_products['SKU'] == sku]
+                if not prod_match.empty:
+                    p_row = prod_match.iloc[0]
+                    p_name = p_row['Product Name']
+                    p_price = float(p_row['Selling Price (€)'])
+                    total_p = p_price * qty
+                    grand_total += total_p
+                    
+                    c_del, c_txt, c_tot = st.columns([1, 4, 2])
+                    with c_del:
+                        if st.button("❌", key=f"del_{sku}"):
+                            del st.session_state.cart[sku]
+                            st.rerun()
+                    with c_txt:
+                        st.write(f"**{p_name}** ({qty}x {p_price:.2f} €)")
+                    with c_tot:
+                        st.write(f"**{total_p:.2f} €**")
 
-    if not st.session_state.cart:
-        st.sidebar.info(t['cart_empty'])
-    else:
-        grand_total = 0.0
-        for sku, qty in list(st.session_state.cart.items()):
-            prod_match = df_products[df_products['SKU'] == sku]
-            if not prod_match.empty:
-                p_row = prod_match.iloc[0]
-                p_name = p_row['Product Name']
-                p_price = float(p_row['Selling Price (€)'])
-                total_p = p_price * qty
-                grand_total += total_p
-                
-                st.sidebar.write(f"**{p_name}**")
-                st.sidebar.write(f"{qty} ks x {p_price:.2f} € = **{total_p:.2f} €**")
-                if st.sidebar.button(t['remove'], key=f"del_{sku}"):
-                    del st.session_state.cart[sku]
-                    st.rerun()
-                st.sidebar.divider()
-                
-        st.sidebar.markdown(f"### **{t['total']}: {grand_total:.2f} €**")
-        if st.sidebar.button(t['checkout_btn'], type="primary", use_container_width=True):
-            st.session_state.page_view = "checkout"
-            st.rerun()
-
-# --- PDF GENERÁLÁS ---
-def register_fonts():
-    try:
-        pdfmetrics.registerFont(TTFont('ArialCustom', 'C:\\Windows\\Fonts\\arial.ttf'))
-        pdfmetrics.registerFont(TTFont('ArialCustom-Bold', 'C:\\Windows\\Fonts\\arialbd.ttf'))
-        return 'ArialCustom', 'ArialCustom-Bold'
-    except Exception:
-        return 'Helvetica', 'Helvetica-Bold'
-
-def generate_pdf_invoice(szamlaszam, datum, nev, ico, adresa, email, tel, polozky, sum_total):
-    pdf_path = os.path.join(INVOICES_DIR, f"faktura_{szamlaszam}.pdf")
-    c = canvas.Canvas(pdf_path, pagesize=A4)
-    width, height = A4
-    font_reg, font_bold = register_fonts()
-
-    if os.path.exists(LOGO_FILE):
-        try:
-            c.drawImage(LOGO_FILE, 450, height - 100, width=90, height=90, preserveAspectRatio=True, mask='auto')
-        except Exception:
-            pass
-
-    c.setFont(font_bold, 18)
-    c.drawString(50, height - 50, "FILIPINO GOODS")
-    c.setFont(font_bold, 12)
-    c.drawString(50, height - 68, "FAKTÚRA / INVOICE / SZÁMLA")
-    
-    c.setFont(font_reg, 10)
-    c.drawString(50, height - 88, f"No: {szamlaszam} | Date: {datum}")
-
-    c.setFont(font_bold, 11)
-    c.drawString(50, height - 125, "Supplier / Dodávateľ / Szállító:")
-    c.setFont(font_reg, 10)
-    c.drawString(50, height - 140, "Filipino Goods s.r.o.")
-    c.drawString(50, height - 155, "Hlavná 123, 946 34 Bátorove Kosihy")
-
-    c.setFont(font_bold, 11)
-    c.drawString(300, height - 125, "Customer / Odberateľ / Vevő:")
-    c.setFont(font_reg, 10)
-    c.drawString(300, height - 140, f"Name: {nev}")
-    if ico:
-        c.drawString(300, height - 155, f"ID: {ico}")
-    c.drawString(300, height - 170, f"Address: {adresa}")
-    c.drawString(300, height - 185, f"Email: {email}")
-
-    c.line(50, height - 205, width - 50, height - 205)
-    c.setFont(font_bold, 9)
-    c.drawString(50, height - 220, "SKU")
-    c.drawString(150, height - 220, "Item / Položka / Termék")
-    c.drawString(350, height - 220, "Qty")
-    c.drawString(410, height - 220, "Price (€)")
-    c.drawString(480, height - 220, "Total (€)")
-    c.line(50, height - 230, width - 50, height - 230)
-
-    y = height - 250
-    c.setFont(font_reg, 9)
-    for p in polozky:
-        c.drawString(50, y, str(p['sku']))
-        c.drawString(150, y, str(p['nev'])[:35])
-        c.drawString(350, y, f"{p['ks']} ks")
-        c.drawString(410, y, f"{p['ar']:.2f} €")
-        c.drawString(480, y, f"{p['spolu']:.2f} €")
-        y -= 20
-
-    c.line(50, y, width - 50, y)
-    y -= 25
-    c.setFont(font_bold, 12)
-    c.drawString(350, y, f"Total: {sum_total:.2f} €")
-    c.save()
-    
-    with open(pdf_path, "rb") as f:
-        pdf_bytes = f.read()
-    return pdf_bytes, pdf_path
-
-def process_order_in_excel(cart_items, order_no, customer_info):
-    try:
-        xls = pd.ExcelFile(EXCEL_FILE)
-        df_stock = pd.read_excel(xls, sheet_name='Current Stock')
-        df_sales = pd.read_excel(xls, sheet_name='Sales Log') if 'Sales Log' in xls.sheet_names else pd.DataFrame()
-
-        new_sales_rows = []
-        now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
-
-        for item in cart_items:
-            sku = item['sku']
-            qty = item['ks']
-            p_name = item['nev']
-
-            mask = df_stock['SKU'].astype(str).str.strip() == sku
-            if mask.any() and 'Current Stock' in df_stock.columns:
-                df_stock.loc[mask, 'Current Stock'] = df_stock.loc[mask, 'Current Stock'] - qty
-
-            new_sales_rows.append({
-                'SKU': sku,
-                'Product Name': p_name,
-                'Date': now_str,
-                'Quantity Sold': qty,
-                'Customer Notes / Order No.': f"Obj: #{order_no} | {customer_info}"
-            })
-
-        df_updated_sales = pd.concat([df_sales, pd.DataFrame(new_sales_rows)], ignore_index=True)
-
-        sheet_data = {}
-        for sheet in xls.sheet_names:
-            if sheet == 'Current Stock':
-                sheet_data[sheet] = df_stock
-            elif sheet == 'Sales Log':
-                sheet_data[sheet] = df_updated_sales
-            else:
-                sheet_data[sheet] = pd.read_excel(xls, sheet_name=sheet)
-
-        with pd.ExcelWriter(EXCEL_FILE, engine='openpyxl') as writer:
-            for sheet_name, df_sheet in sheet_data.items():
-                df_sheet.to_excel(writer, sheet_name=sheet_name, index=False)
-
-        st.cache_data.clear()
-        return True
-    except Exception as e:
-        st.error(f"Excel Error: {e}")
-        return False
+            st.markdown(f"### **{t['total']}: {grand_total:.2f} €**")
+            if st.button(t['checkout_btn'], type="primary", use_container_width=True):
+                st.session_state.page_view = "checkout"
+                st.rerun()
 
 # ==========================================
 # OLDALAK MEGJELENÍTÉSE
@@ -481,87 +358,29 @@ if st.session_state.page_view == "checkout":
         summary_df = pd.DataFrame(cart_items)
         st.dataframe(summary_df, use_container_width=True, hide_index=True)
         st.markdown(f"### **{t['total']}: {grand_total:.2f} €**")
-        st.divider()
-
-        st.subheader(t['customer_details'])
-        with st.form("checkout_form"):
-            col1, col2 = st.columns(2)
-            with col1:
-                o_nev = st.text_input(t['name'])
-                o_email = st.text_input(t['email'])
-                o_tel = st.text_input(t['phone'])
-            with col2:
-                o_adresa = st.text_input(t['address_label'])
-                o_ico = st.text_input(t['ico'])
-
-            submit_order = st.form_submit_button(t['submit_order'], type="primary", use_container_width=True)
-
-        if submit_order:
-            if not o_nev or not o_adresa or not o_email:
-                st.error("Please fill in all required fields!")
-            else:
-                szamlaszam = f"{datetime.now().strftime('%Y%m%d%H%M%S')}"
-                datum = datetime.now().strftime("%Y-%m-%d")
-                customer_info = f"{o_nev}, {o_email}, {o_tel}"
-
-                if process_order_in_excel(cart_items, szamlaszam, customer_info):
-                    pdf_bytes, pdf_path = generate_pdf_invoice(
-                        szamlaszam, datum, o_nev, o_ico, o_adresa, o_email, o_tel, cart_items, grand_total
-                    )
-                    st.balloons()
-                    st.success(t['success_msg'])
-                    st.download_button(
-                        label=t['download_inv'],
-                        data=pdf_bytes,
-                        file_name=f"faktura_{szamlaszam}.pdf",
-                        mime="application/pdf",
-                        type="primary"
-                    )
-                    st.session_state.cart = {}
 
 else:
-    # 1. 🏠 HOME (FŐOLDAL)
+    # 1. 🏠 HOME
     if page == t["nav_home"]:
         if os.path.exists(BANNER_FILE):
-            # Banner kép megjelenítése
             st.image(BANNER_FILE, use_container_width=True)
-
-            # Negatív margóval feltoljuk a gombokat a kép tetejére (pont a képen lévő gombokra)
-            st.markdown(
-                """
-                <style>
-                div[data-testid="stHorizontalBlock"]:has(button[key="overlay_shop_btn"]) {
-                    margin-top: -38vw !important;
-                    position: relative;
-                    z-index: 10;
-                    padding-left: 2%;
-                }
-                </style>
-                """,
-                unsafe_allow_html=True
-            )
-
-            # Kattintható Streamlit gombok elhelyezése
-            c1, c2, _ = st.columns([1.5, 1.5, 5])
-            with c1:
-                if st.button("🛍️ SHOP NOW", key="overlay_shop_btn", type="primary", use_container_width=True):
-                    st.session_state.current_nav = t["nav_products"]
+            
+            # Gombok a banner alatt
+            btn_col1, btn_col2, _ = st.columns([1, 1, 2])
+            with btn_col1:
+                if st.button("🛍️ SHOP NOW", type="primary", use_container_width=True):
+                    st.session_state.top_nav = t["nav_products"]
                     st.rerun()
-            with c2:
-                if st.button("🤍 OUR STORY", key="overlay_story_btn", use_container_width=True):
-                    st.session_state.current_nav = t["nav_about"]
+            with btn_col2:
+                if st.button("🤍 OUR STORY", use_container_width=True):
+                    st.session_state.top_nav = t["nav_about"]
                     st.rerun()
-
-            # Helyreállítjuk a teret a banner alatt
-            st.markdown("<div style='margin-top: 32vw;'></div>", unsafe_allow_html=True)
-
         else:
             st.title(t["welcome_title"])
-            st.caption(t["welcome_sub"])
 
         st.divider()
 
-        # Vásárlási előnyök (Ikonsor)
+        # Vásárlási előnyök
         col_b1, col_b2, col_b3 = st.columns(3)
         with col_b1:
             st.success("🚚 **Gyors Szállítás**\n\n2-4 munkanapon belül, 50 € felett ingyenes!")
@@ -571,11 +390,9 @@ else:
             st.warning("💳 **Biztonságos Fizetés**\n\nBanki átutalás vagy utánvét.")
 
         st.divider()
-
-        # Kiemelt Termékek
         st.subheader(t["featured_title"])
         display_product_grid(df_products.head(6))
-        display_sidebar_cart()
+        display_cart_section()
 
     # 2. 📦 PRODUCTS
     elif page == t["nav_products"]:
@@ -587,7 +404,7 @@ else:
         ] if search_query else df_products
 
         display_product_grid(filtered_df)
-        display_sidebar_cart()
+        display_cart_section()
 
     # 3. 📂 CATEGORIES
     elif page == t["nav_categories"]:
@@ -596,7 +413,7 @@ else:
         selected_cat = st.selectbox(t["category_select"], cats)
         filtered_df = df_products if selected_cat == t["cat_all"] else df_products[df_products['Category'] == selected_cat]
         display_product_grid(filtered_df)
-        display_sidebar_cart()
+        display_cart_section()
 
     # 4. ℹ️ ABOUT US
     elif page == t["nav_about"]:
@@ -604,7 +421,7 @@ else:
         st.write(t["about_text"])
         st.subheader(t["contact_info"])
         st.write(f"- 📍 {t['address']}\n- 📧 info@filipinogoods.sk\n- 📞 +421 900 123 456")
-        display_sidebar_cart()
+        display_cart_section()
 
     # 5. 📜 POLICIES
     elif page == t["nav_policies"]:
@@ -616,19 +433,9 @@ else:
             st.markdown(t["payment_text"])
         with tab3:
             st.markdown(t["privacy_text"])
-        display_sidebar_cart()
+        display_cart_section()
 
     # 6. ⚙️ ADMIN
     elif page == t["nav_admin"]:
         st.title("⚙️ Admin Dashboard")
-        tab1, tab2 = st.tabs(["📦 Stock & Prices", "📑 Orders & Invoices"])
-        with tab1:
-            st.dataframe(df_products, use_container_width=True)
-        with tab2:
-            df_sales = load_sales_log()
-            st.dataframe(df_sales, use_container_width=True)
-            invoice_files = [f for f in os.listdir(INVOICES_DIR) if f.endswith('.pdf')]
-            if invoice_files:
-                selected_pdf = st.selectbox("Download Invoice:", sorted(invoice_files, reverse=True))
-                with open(os.path.join(INVOICES_DIR, selected_pdf), "rb") as pdf_file:
-                    st.download_button("📥 Download PDF", data=pdf_file.read(), file_name=selected_pdf, mime="application/pdf")
+        st.dataframe(df_products, use_container_width=True)
