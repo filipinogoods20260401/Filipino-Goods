@@ -243,21 +243,32 @@ t = TEXTS[st.session_state.selected_lang]
 
 # --- ADATOK BETÖLTÉSE ---
 @st.cache_data
+@st.cache_data
 def load_products():
     file_path = "Inventory management spreadsheet base.xlsx"
+    if not os.path.exists(file_path):
+        file_path = "products.xlsx"
+
     if os.path.exists(file_path):
         df = pd.read_excel(file_path)
-        return df
-    else:
-        # Helyettesítő adatok, ha nincs meg a fájl
-        data = {
-            "SKU": ["ABMSG454", "ARGCB340", "BBCSA90", "BBCSB90", "BUEPY340"],
-            "Product Name": ["Ajinomoto Brand - MSG 454g", "Argentina - Corned Beef 340g", "Boy Bawang - Garlic 90g", "Boy Bawang - Adobo 90g", "Buenas - Sweet Purple Yam Ube 340g"],
-            "Selling Price (€)": [3.99, 7.99, 1.49, 1.49, 5.99],
-            "Current Stock": [14, 16, 14, 21, 19],
-            "Category": ["Spices", "Canned", "Snacks", "Snacks", "Sweets"]
+        
+        # Szóközök eltávolítása az oszlopnevek elejéről/végéről
+        df.columns = df.columns.str.strip()
+        
+        # Oszlopnevek automatiskus igazítása, ha másképp szerepelnek
+        column_mapping = {
+            "Selling Price": "Selling Price (€)",
+            "Price": "Selling Price (€)",
+            "Price (€)": "Selling Price (€)",
+            "Ár": "Selling Price (€)",
+            "Stock": "Current Stock",
+            "Quantity": "Current Stock",
+            "Készlet": "Current Stock",
+            "Name": "Product Name",
+            "Terméknév": "Product Name"
         }
-        return pd.DataFrame(data)
+        df = df.rename(columns=column_mapping)
+        return df
 
 products_df = load_products()
 
