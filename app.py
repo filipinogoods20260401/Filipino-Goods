@@ -203,7 +203,7 @@ df_products = load_products()
 
 # --- HERO BANNER ---
 if os.path.exists(BANNER_FILE):
-    st.image(BANNER_FILE, use_column_width=True)
+    st.image(BANNER_FILE, use_container_width=True)
 
 # --- FEJLÉC ---
 head_col1, head_col2, head_col3 = st.columns([1, 3, 1])
@@ -257,7 +257,7 @@ def display_product_grid(products_df):
         img_src = get_product_image(sku)
 
         with cols[col_idx]:
-            st.image(img_src, use_column_width=True)
+            st.image(img_src, use_container_width=True)
             st.markdown(f"### {p_name}")
             st.info(f"🔑 **SKU:** `{sku}`")
             st.write(f"💶 **{t['price']}:** {p_price:.2f} €")
@@ -334,7 +334,7 @@ if st.session_state.page_view == "checkout":
                 cart_items.append({"SKU": sku, "Názov": p_name, "Cena (€)": p_price, "Množstvo": qty, "Spolu (€)": total_p})
 
         summary_df = pd.DataFrame(cart_items)
-        st.dataframe(summary_df, use_column_width=True, hide_index=True)
+        st.dataframe(summary_df, use_container_width=True, hide_index=True)
         st.markdown(f"### **{t['total']}: {grand_total:.2f} €**")
         
         # Rendelés befejezése gomb (példa)
