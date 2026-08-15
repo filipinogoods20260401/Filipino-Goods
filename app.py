@@ -346,7 +346,7 @@ if st.session_state.page_view == "checkout":
 else:
     # 1. 🏠 HOME
     if selected_page == t["nav_home"]:
-    col_b1, col_b2, col_b3 = st.columns(3)
+        col_b1, col_b2, col_b3 = st.columns(3)
         with col_b1:
             st.success("🚚 **Gyors Szállítás**\n\n2-4 munkanapon belül, 50 € felett ingyenes!")
         with col_b2:
