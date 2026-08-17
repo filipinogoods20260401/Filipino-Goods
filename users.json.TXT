@@ -1,0 +1,11 @@
+{
+    "ladanyijeni@hotmail.com": {
+        "password": "IDE_ÍRD_A_JELSZAVADAT",
+        "name": "Ladányi Jenő",
+        "phone": "+421908813657",
+        "address": "Modrany 263",
+        "city": "Modrany",
+        "zip": "94633",
+        "country": "Slovensko"
+    }
+}
