@@ -1163,6 +1163,13 @@ with st.sidebar:
                     if l_email in users and users[l_email]["password"] == l_pass:
                         st.session_state.user = users[l_email]
                         st.session_state.user["email_key"] = l_email
+                        
+                        # AUTOMATIKUS ADMIN AZONOSÍTÁS
+                        if l_email.lower().strip() == ADMIN_EMAIL.lower().strip():
+                            st.session_state.admin_logged_in = True
+                        else:
+                            st.session_state.admin_logged_in = False
+                            
                         st.rerun()
                     else:
                         st.error(t["login_error"])
