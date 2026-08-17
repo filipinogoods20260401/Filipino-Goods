@@ -1101,7 +1101,7 @@ elif current_p == "admin":
                             )
     
             # ÚJ FÜL A BANKI ADATOK SZERKESZTÉSÉHEZ:
-            with admin_tab3:
+        with admin_tab3:
                 st.subheader("⚙️ Cég- és Banki adatok (Faktúra beállítások)")
                 current_settings = load_settings()
                 
