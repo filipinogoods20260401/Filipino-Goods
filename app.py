@@ -115,12 +115,14 @@ def setup_pdf_fonts():
             font_italic
         )
 
-    # Betűtípusok regisztrálása a ReportLab számára
-    pdfmetrics.registerFont(TTFont("DejaVu", font_regular))
-    pdfmetrics.registerFont(TTFont("DejaVu-Bold", font_bold))
-    pdfmetrics.registerFont(TTFont("DejaVu-Italic", font_italic))
+# --- UNICODE BETŰTÍPUS BEÁLLÍTÁSA (HELYI FÁJLBÓL) ---
+def setup_pdf_fonts():
+    font_path = "DejaVuSans.ttf"
+    if os.path.exists(font_path):
+        pdfmetrics.registerFont(TTFont("DejaVu", font_path))
+    else:
+        print("A DejaVuSans.ttf fájl nem található, alapértelmezett betűtípus használata.")
 
-# Betűtípus betöltése az alkalmazás indításakor
 setup_pdf_fonts()
 
 # --- FAKTÚRA GENERÁLÓ FÜGGVÉNY ---
@@ -129,21 +131,24 @@ def generate_pdf_invoice(order):
     buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=letter)
     
+    # Ellenőrizzük, hogy elérhető-e a DejaVu betűtípus
+    font_name = "DejaVu" if "DejaVu" in pdfmetrics.getRegisteredFontNames() else "Helvetica"
+    
     # 1. FEJLÉC ÉS SZÁMLASZÁM
-    p.setFont("DejaVu-Bold", 14)
+    p.setFont(font_name, 14)
     p.drawString(50, 750, f"FAKTÚRA - DAŇOVÝ DOKLAD č. {order['id']}")
     
     # Dátumok
-    p.setFont("DejaVu", 8)
+    p.setFont(font_name, 8)
     p.drawString(370, 755, f"Dátum vyhotovenia (Kiállítás): {order['date']}")
     p.drawString(370, 742, f"Dátum dodania (Teljesítés): {order['date']}")
     
     # 2. ELADÓ ÉS VEVŐ ADATAI
-    p.setFont("DejaVu-Bold", 9)
+    p.setFont(font_name, 9)
     p.drawString(50, 715, "DODÁVATEĽ (Eladó):")
     p.drawString(300, 715, "ODBERATEĽ (Vevő):")
     
-    p.setFont("DejaVu", 8.5)
+    p.setFont(font_name, 8.5)
     # Eladó adatai
     p.drawString(50, 700, f"{settings['company_name']}")
     p.drawString(50, 688, f"{settings['company_address']}")
@@ -164,7 +169,7 @@ def generate_pdf_invoice(order):
     p.line(50, 640, 550, 640)
     
     # 3. FIZETÉSI ADATOK
-    p.setFont("DejaVu-Bold", 8.5)
+    p.setFont(font_name, 8.5)
     p.drawString(50, 625, f"Spôsob úhrady (Fizetés): {order['payment']}")
     p.drawString(300, 625, f"IBAN: {settings['iban']}")
     p.drawString(300, 613, f"SWIFT/BIC: {settings['swift']}")
@@ -174,7 +179,7 @@ def generate_pdf_invoice(order):
     
     # 4. TÉTELEK TÁBLÁZATA
     y = 570
-    p.setFont("DejaVu-Bold", 8.5)
+    p.setFont(font_name, 8.5)
     p.drawString(50, y, "Názov položky (Termék neve)")
     p.drawString(280, y, "Množstvo")
     p.drawString(350, y, "J.cena")
@@ -189,7 +194,7 @@ def generate_pdf_invoice(order):
     p.line(50, y, 550, y)
     
     y -= 15
-    p.setFont("DejaVu", 8.5)
+    p.setFont(font_name, 8.5)
     for item in order['items']:
         p.drawString(50, y, str(item['name'])[:35])
         p.drawString(280, y, f"{item['qty']} ks")
@@ -207,7 +212,7 @@ def generate_pdf_invoice(order):
     
     # 5. ÖSSZESÍTÉS ÉS ZÁRADÉKOK
     y -= 25
-    p.setFont("DejaVu-Bold", 10)
+    p.setFont(font_name, 10)
     
     if settings.get('is_dph_payer'):
         netto = order['total'] / 1.20
@@ -220,7 +225,7 @@ def generate_pdf_invoice(order):
     else:
         p.drawString(300, y, f"CELKOM K ÚHRADE: {order['total']:.2f} EUR")
         y -= 20
-        p.setFont("DejaVu-Italic", 8)
+        p.setFont(font_name, 8)
         p.drawString(50, y, "Nie sme platiteľom DPH podľa § 4 zákona č. 222/2004 Z. z. o dani z pridanej hodnoty.")
     
     p.showPage()
