@@ -1053,13 +1053,13 @@ elif current_p == "admin":
         st.divider()
         admin_tab1, admin_tab2, admin_tab3 = st.tabs(["📦 Raktárkészlet", "📑 Rendelések & Faktúrák", "⚙️ Banki adatok"])
         
-            with admin_tab1:
-                st.subheader("📊 Raktárkészlet kezelése")
-                edited_df = st.data_editor(
-                products_df,
-                num_rows="dynamic",
-                use_container_width=True,
-                key="admin_data_editor"
+        with admin_tab1:
+            st.subheader("📊 Raktárkészlet kezelése")
+            edited_df = st.data_editor(
+            products_df,
+            num_rows="dynamic",
+            use_container_width=True,
+            key="admin_data_editor"
             )
             if st.button("💾 Módosítások mentése", type="primary", key="save_admin_changes"):
                 try:
