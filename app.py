@@ -1149,8 +1149,12 @@ with st.sidebar:
     
     if st.session_state.user:
         st.success(f"👋 {t['login_success']} **{st.session_state.user['name']}**!")
+        if st.session_state.admin_logged_in:
+            st.info("🔑 Admin jogosultság aktiválva")
+            
         if st.button(t["logout_user"], key="user_logout", use_container_width=True):
             st.session_state.user = None
+            st.session_state.admin_logged_in = False
             st.rerun()
     else:
         with st.expander(f"👤 {t['login_title']}"):
