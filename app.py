@@ -49,27 +49,35 @@ st.markdown("""
 
 # --- ORDERS ADATBÁZIS & FAKTÚRA GENERÁLÓ ---
 ORDERS_FILE = "orders.json"
-
-# --- BANKI ADATOK KEZELÉSE ---
 SETTINGS_FILE = "settings.json"
 
-def load_bank_details():
-    default_details = {
+# --- BANKI ÉS CÉGADATOK KEZELÉSE ---
+def load_settings():
+    default_settings = {
         "iban": "SK89 0000 0000 1234 5678",
-        "swift": "SUBASKBX"
+        "swift": "SUBASKBX",
+        "company_name": "Saját Cég s.r.o.",
+        "company_address": "Mestská 12, 946 03 Kolárovo",
+        "ico": "12345678",
+        "dic": "2021234567",
+        "ic_dph": "",  # Ha nem ÁFA fizető, hagyd üresen
+        "register_info": "Zapísaný v OR Okresného súdu Nitra, oddiel: Sro, vložka č. 12345/N",
+        "is_dph_payer": False  # True esetén ÁFA fizető
     }
     if os.path.exists(SETTINGS_FILE):
         try:
             with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+                data = json.load(f)
+                default_settings.update(data)
+                return default_settings
         except Exception:
-            return default_details
-    return default_details
+            return default_settings
+    return default_settings
 
-def save_bank_details(details):
+def save_settings(settings):
     with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
-        json.dump(details, f, ensure_ascii=False, indent=4)
-        
+        json.dump(settings, f, ensure_ascii=False, indent=4)
+
 def load_orders():
     if os.path.exists(ORDERS_FILE):
         with open(ORDERS_FILE, "r", encoding="utf-8") as f:
@@ -83,40 +91,103 @@ def save_order(order_data):
         json.dump(orders, f, ensure_ascii=False, indent=4)
 
 def generate_pdf_invoice(order):
+    settings = load_settings()
     buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=letter)
     
-    # Faktúra Fejléc
+    # 1. FEJLÉC ÉS SZÁMLASZÁM
     p.setFont("Helvetica-Bold", 16)
-    p.drawString(100, 750, f"FAKTURA / INVOICE #{order['id']}")
+    p.drawString(50, 750, f"FAKTÚRA - DAŇOVÝ DOKLAD č. {order['id']}")
     
-    p.setFont("Helvetica", 10)
-    p.drawString(100, 730, f"Datum: {order['date']}")
-    p.drawString(100, 715, f"Zakaznik / Customer: {order['name']}")
-    p.drawString(100, 700, f"Adresa / Address: {order['address']}, {order['city']} {order['zip']}")
-    p.drawString(100, 685, f"E-mail: {order['email']} | Tel: {order['phone']}")
+    # Dátumok (Kiállítás, Teljesítés)
+    p.setFont("Helvetica", 9)
+    p.drawString(380, 750, f"Dátum vyhotovenia (Kiállítás): {order['date']}")
+    p.drawString(380, 738, f"Dátum dodania (Teljesítés): {order['date']}")
     
-    p.line(100, 670, 500, 670)
+    # 2. ELADÓ ÉS VEVŐ ADATAI
+    p.setFont("Helvetica-Bold", 10)
+    p.drawString(50, 715, "DODÁVATEĽ (Eladó):")
+    p.drawString(300, 715, "ODBERATEĽ (Vevő):")
     
-    # Tételek
-    y = 650
-    p.setFont("Helvetica-Bold", 11)
-    p.drawString(100, y, "Polozka / Termek")
-    p.drawString(350, y, "Mnostvo")
-    p.drawString(450, y, "Suma")
+    p.setFont("Helvetica", 9)
+    # Eladó adatai
+    p.drawString(50, 700, f"{settings['company_name']}")
+    p.drawString(50, 688, f"{settings['company_address']}")
+    p.drawString(50, 676, f"IČO: {settings['ico']} | DIČ: {settings['dic']}")
+    if settings.get('ic_dph'):
+        p.drawString(50, 664, f"IČ DPH: {settings['ic_dph']}")
+    else:
+        p.drawString(50, 664, "Dodávateľ nie je platiteľom DPH")
+    p.drawString(50, 652, f"{settings['register_info']}")
     
-    y -= 20
-    p.setFont("Helvetica", 10)
+    # Vevő adatai
+    p.drawString(300, 700, f"{order['name']}")
+    p.drawString(300, 688, f"{order['address']}")
+    p.drawString(300, 676, f"{order['city']}, {order['zip']}")
+    p.drawString(300, 664, f"E-mail: {order['email']}")
+    p.drawString(300, 652, f"Tel: {order['phone']}")
+    
+    p.line(50, 640, 550, 640)
+    
+    # 3. FIZETÉSI ADATOK
+    p.setFont("Helvetica-Bold", 9)
+    p.drawString(50, 625, f"Spôsob úhrady (Fizetés): {order['payment']}")
+    p.drawString(300, 625, f"IBAN: {settings['iban']}")
+    p.drawString(300, 613, f"SWIFT/BIC: {settings['swift']}")
+    p.drawString(300, 601, f"Variabilný symbol: {order['id']}")
+    
+    p.line(50, 590, 550, 590)
+    
+    # 4. TÉTELEK TÁBLÁZATA
+    y = 570
+    p.setFont("Helvetica-Bold", 9)
+    p.drawString(50, y, "Názov položky (Termék neve)")
+    p.drawString(280, y, "Množstvo")
+    p.drawString(350, y, "J.cena")
+    
+    if settings.get('is_dph_payer'):
+        p.drawString(420, y, "DPH %")
+        p.drawString(480, y, "Spolu s DPH")
+    else:
+        p.drawString(480, y, "Spolu (Összesen)")
+        
+    y -= 15
+    p.line(50, y, 550, y)
+    
+    y -= 15
+    p.setFont("Helvetica", 9)
     for item in order['items']:
-        p.drawString(100, y, str(item['name'])[:35])
-        p.drawString(350, y, f"{item['qty']} ks")
-        p.drawString(450, y, f"{item['subtotal']:.2f} EUR")
+        p.drawString(50, y, str(item['name'])[:35])
+        p.drawString(280, y, f"{item['qty']} ks")
+        unit_price = item['subtotal'] / item['qty'] if item['qty'] > 0 else 0
+        p.drawString(350, y, f"{unit_price:.2f} €")
+        
+        if settings.get('is_dph_payer'):
+            p.drawString(420, y, "20%")
+            p.drawString(480, y, f"{item['subtotal']:.2f} €")
+        else:
+            p.drawString(480, y, f"{item['subtotal']:.2f} €")
         y -= 15
         
-    p.line(100, y, 500, y)
-    y -= 20
-    p.setFont("Helvetica-Bold", 12)
-    p.drawString(100, y, f"SPOLU / OSSZESEN: {order['total']:.2f} EUR")
+    p.line(50, y, 550, y)
+    
+    # 5. ÖSSZESÍTÉS ÉS ZÁRADÉK
+    y -= 25
+    p.setFont("Helvetica-Bold", 11)
+    
+    if settings.get('is_dph_payer'):
+        netto = order['total'] / 1.20
+        dph_val = order['total'] - netto
+        p.drawString(300, y, f"Základ dane (Adóalap): {netto:.2f} €")
+        y -= 15
+        p.drawString(300, y, f"DPH 20%: {dph_val:.2f} €")
+        y -= 15
+        p.drawString(300, y, f"CELKOM K ÚHRADE: {order['total']:.2f} EUR")
+    else:
+        p.drawString(300, y, f"CELKOM K ÚHRADE: {order['total']:.2f} EUR")
+        y -= 20
+        p.setFont("Helvetica-Oblique", 9)
+        p.drawString(50, y, "Nie sme platiteľom DPH podľa § 4 zákona č. 222/2004 Z. z. o dani z pridanej hodnoty.")
     
     p.showPage()
     p.save()
