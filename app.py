@@ -503,6 +503,12 @@ if "admin_logged_in" not in st.session_state:
 if "user" not in st.session_state:
     st.session_state.user = None
 
+# Megadod az admin e-mail címedet
+ADMIN_EMAIL = "jenoladanyi@filipinogoods.sk"
+
+if "user" not in st.session_state:
+    st.session_state.user = None
+
 t = TEXTS[st.session_state.selected_lang]
 
 # --- ADATOK BETÖLTÉSE ---
@@ -1053,6 +1059,10 @@ elif current_p == "admin":
             st.session_state.admin_logged_in = False
             st.rerun()
             
+        if not st.session_state.user or not st.session_state.admin_logged_in:
+        st.warning("⚠️ Ehhez az oldalhoz adminisztrátori bejelentkezés szükséges! Kérjük, jelentkezz be az oldalsávban az admin e-mail címeddel.")
+    else:
+        st.success(f"🔑 Adminisztrátorként bejelentkezve: {st.session_state.user['email_key']}")
         st.divider()
         admin_tab1, admin_tab2, admin_tab3 = st.tabs(["📦 Raktárkészlet", "📑 Rendelések & Faktúrák", "⚙️ Banki adatok"])
         
