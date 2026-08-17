@@ -131,25 +131,24 @@ def generate_pdf_invoice(order):
     buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=letter)
     
-    # Ellenőrizzük, hogy elérhető-e a DejaVu betűtípus
     font_name = "DejaVu" if "DejaVu" in pdfmetrics.getRegisteredFontNames() else "Helvetica"
     
     # 1. FEJLÉC ÉS SZÁMLASZÁM
-    p.setFont(font_name, 14)
+    p.setFont(font_name, 13)
     p.drawString(50, 750, f"FAKTÚRA - DAŇOVÝ DOKLAD č. {order['id']}")
     
-    # Dátumok
+    # Dátumok (jobbra igazítva)
     p.setFont(font_name, 8)
-    p.drawString(370, 755, f"Dátum vyhotovenia (Kiállítás): {order['date']}")
-    p.drawString(370, 742, f"Dátum dodania (Teljesítés): {order['date']}")
+    p.drawString(350, 755, f"Dátum vyhotovenia (Kiállítás): {order['date']}")
+    p.drawString(350, 742, f"Dátum dodania (Teljesítés): {order['date']}")
     
     # 2. ELADÓ ÉS VEVŐ ADATAI
     p.setFont(font_name, 9)
     p.drawString(50, 715, "DODÁVATEĽ (Eladó):")
-    p.drawString(300, 715, "ODBERATEĽ (Vevő):")
+    p.drawString(320, 715, "ODBERATEĽ (Vevő):")
     
-    p.setFont(font_name, 8.5)
-    # Eladó adatai
+    p.setFont(font_name, 8)
+    # Eladó adatai (X = 50)
     p.drawString(50, 700, f"{settings['company_name']}")
     p.drawString(50, 688, f"{settings['company_address']}")
     p.drawString(50, 676, f"IČO: {settings['ico']} | DIČ: {settings['dic']}")
@@ -157,28 +156,33 @@ def generate_pdf_invoice(order):
         p.drawString(50, 664, f"IČ DPH: {settings['ic_dph']}")
     else:
         p.drawString(50, 664, "Dodávateľ nie je platiteľom DPH")
-    p.drawString(50, 652, f"{settings['register_info']}")
     
-    # Vevő adatai
-    p.drawString(300, 700, f"{order['name']}")
-    p.drawString(300, 688, f"{order['address']}")
-    p.drawString(300, 676, f"{order['city']}, {order['zip']}")
-    p.drawString(300, 664, f"E-mail: {order['email']}")
-    p.drawString(300, 652, f"Tel: {order['phone']}")
+    # Hosszú cégbejegyzési szöveg levágása / törése
+    reg_text = str(settings.get('register_info', ''))
+    p.drawString(50, 652, reg_text[:45])
+    if len(reg_text) > 45:
+        p.drawString(50, 642, reg_text[45:90])
     
-    p.line(50, 640, 550, 640)
+    # Vevő adatai (X = 320 - több hely az eladónak)
+    p.drawString(320, 700, f"{order['name']}")
+    p.drawString(320, 688, f"{order['address']}")
+    p.drawString(320, 676, f"{order['city']}, {order['zip']}")
+    p.drawString(320, 664, f"E-mail: {order['email']}")
+    p.drawString(320, 652, f"Tel: {order['phone']}")
+    
+    p.line(50, 630, 550, 630)
     
     # 3. FIZETÉSI ADATOK
-    p.setFont(font_name, 8.5)
-    p.drawString(50, 625, f"Spôsob úhrady (Fizetés): {order['payment']}")
-    p.drawString(300, 625, f"IBAN: {settings['iban']}")
-    p.drawString(300, 613, f"SWIFT/BIC: {settings['swift']}")
-    p.drawString(300, 601, f"Variabilný symbol: {order['id']}")
+    p.setFont(font_name, 8)
+    p.drawString(50, 615, f"Spôsob úhrady (Fizetés): {order['payment']}")
+    p.drawString(320, 615, f"IBAN: {settings['iban']}")
+    p.drawString(320, 603, f"SWIFT/BIC: {settings['swift']}")
+    p.drawString(320, 591, f"Variabilný symbol: {order['id']}")
     
-    p.line(50, 590, 550, 590)
+    p.line(50, 580, 550, 580)
     
     # 4. TÉTELEK TÁBLÁZATA
-    y = 570
+    y = 560
     p.setFont(font_name, 8.5)
     p.drawString(50, y, "Názov položky (Termék neve)")
     p.drawString(280, y, "Množstvo")
@@ -190,11 +194,11 @@ def generate_pdf_invoice(order):
     else:
         p.drawString(480, y, "Spolu (Összesen)")
         
-    y -= 12
+    y -= 10
     p.line(50, y, 550, y)
     
     y -= 15
-    p.setFont(font_name, 8.5)
+    p.setFont(font_name, 8)
     for item in order['items']:
         p.drawString(50, y, str(item['name'])[:35])
         p.drawString(280, y, f"{item['qty']} ks")
@@ -225,7 +229,7 @@ def generate_pdf_invoice(order):
     else:
         p.drawString(300, y, f"CELKOM K ÚHRADE: {order['total']:.2f} EUR")
         y -= 20
-        p.setFont(font_name, 8)
+        p.setFont(font_name, 7.5)
         p.drawString(50, y, "Nie sme platiteľom DPH podľa § 4 zákona č. 222/2004 Z. z. o dani z pridanej hodnoty.")
     
     p.showPage()
