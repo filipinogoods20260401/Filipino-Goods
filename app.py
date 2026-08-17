@@ -1064,18 +1064,45 @@ elif current_p == "admin":
 
         # ÚJ FÜL A BANKI ADATOK SZERKESZTÉSÉHEZ:
         with admin_tab3:
-            st.subheader("🏦 Banki utalási adatok módosítása")
-            current_bank = load_bank_details()
+            st.subheader("⚙️ Cég- és Banki adatok (Faktúra beállítások)")
+            current_settings = load_settings()
             
-            with st.form("bank_details_form"):
-                new_iban = st.text_input("IBAN számlaszám", value=current_bank.get("iban", ""))
-                new_swift = st.text_input("SWIFT / BIC kód", value=current_bank.get("swift", ""))
+            with st.form("company_settings_form"):
+                st.markdown("**Cég adatai (Eladó / Dodávateľ)**")
+                c_name = st.text_input("Cégnév / Név", value=current_settings.get("company_name", ""))
+                c_addr = st.text_input("Székhely / Lakcím", value=current_settings.get("company_address", ""))
                 
-                save_bank_btn = st.form_submit_button("💾 Banki adatok mentése", type="primary")
+                col_c1, col_c2 = st.columns(2)
+                with col_c1:
+                    c_ico = st.text_input("IČO", value=current_settings.get("ico", ""))
+                    c_dic = st.text_input("DIČ", value=current_settings.get("dic", ""))
+                with col_c2:
+                    is_dph = st.checkbox("ÁFA fizető? (Platiteľ DPH)", value=current_settings.get("is_dph_payer", False))
+                    c_ic_dph = st.text_input("IČ DPH (ha ÁFA fizető)", value=current_settings.get("ic_dph", ""))
                 
-                if save_bank_btn:
-                    save_bank_details({"iban": new_iban, "swift": new_swift})
-                    st.success("A banki adatok sikeresen frissültek!")
+                c_reg = st.text_area("Cégbírósági bejegyzés / Nyilvántartás", value=current_settings.get("register_info", ""))
+                
+                st.divider()
+                st.markdown("**Banki adatok**")
+                new_iban = st.text_input("IBAN számlaszám", value=current_settings.get("iban", ""))
+                new_swift = st.text_input("SWIFT / BIC kód", value=current_settings.get("swift", ""))
+                
+                save_settings_btn = st.form_submit_button("💾 Beállítások mentése", type="primary")
+                
+                if save_settings_btn:
+                    updated_settings = {
+                        "company_name": c_name,
+                        "company_address": c_addr,
+                        "ico": c_ico,
+                        "dic": c_dic,
+                        "ic_dph": c_ic_dph,
+                        "is_dph_payer": is_dph,
+                        "register_info": c_reg,
+                        "iban": new_iban,
+                        "swift": new_swift
+                    }
+                    save_settings(updated_settings)
+                    st.success("A cég- és banki adatok sikeresen frissültek!")
                     st.rerun()
                     
 # --- BEJELENTKEZÉS ÉS PROFIL (OLDALSÁV / SIDEBAR) ---
