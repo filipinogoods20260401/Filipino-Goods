@@ -1052,96 +1052,96 @@ elif current_p == "admin":
         st.success(f"🔑 Adminisztrátorként bejelentkezve: {st.session_state.user['email_key']}")
         st.divider()
         admin_tab1, admin_tab2, admin_tab3 = st.tabs(["📦 Raktárkészlet", "📑 Rendelések & Faktúrák", "⚙️ Banki adatok"])
-        
-        with admin_tab1:
-            st.subheader("📊 Raktárkészlet kezelése")
-            edited_df = st.data_editor(
-            products_df,
-            num_rows="dynamic",
-            use_container_width=True,
-            key="admin_data_editor"
-            )
-            if st.button("💾 Módosítások mentése", type="primary", key="save_admin_changes"):
-                try:
-                    file_path = "Inventory management spreadsheet base.xlsx"
-                    if not os.path.exists(file_path):
-                        file_path = "products.xlsx"
-                    edited_df.to_excel(file_path, index=False)
-                    st.session_state.products_df = edited_df
-                    st.cache_data.clear()
-                    st.success(t["stock_updated"])
-                except Exception as e:
-                    st.error(f"Hiba a mentés során: {e}")
-                    
-        with admin_tab2:
-            st.subheader("📋 Beérkezett megrendelések")
-            orders = load_orders()
-            
-            if not orders:
-                st.info("Még nem érkezett megrendelés.")
-            else:
-                for ord_data in reversed(orders):
-                    with st.expander(f"🧾 {ord_data['id']} - {ord_data['name']} ({ord_data['date']}) - {ord_data['total']:.2f} €"):
-                        st.write(f"**Vevő:** {ord_data['name']} ({ord_data['email']}, {ord_data['phone']})")
-                        st.write(f"**Cím:** {ord_data['address']}, {ord_data['city']} {ord_data['zip']}")
-                        st.write(f"**Fizetés:** {ord_data['payment']}")
-                        
-                        st.write("**Tételek:**")
-                        for item in ord_data['items']:
-                            st.write(f"- {item['name']} (SKU: {item['sku']}) - {item['qty']} ks x {item['subtotal']:.2f} €")
-                        
-                        # PDF Faktúra Letöltése gomb
-                        pdf_buffer = generate_pdf_invoice(ord_data)
-                        st.download_button(
-                            label="📄 Faktúra / Számla letöltése (PDF)",
-                            data=pdf_buffer,
-                            file_name=f"faktura_{ord_data['id']}.pdf",
-                            mime="application/pdf",
-                            key=f"dl_pdf_{ord_data['id']}"
-                        )
 
-        # ÚJ FÜL A BANKI ADATOK SZERKESZTÉSÉHEZ:
-        with admin_tab3:
-            st.subheader("⚙️ Cég- és Banki adatok (Faktúra beállítások)")
-            current_settings = load_settings()
-            
-            with st.form("company_settings_form"):
-                st.markdown("**Cég adatai (Eladó / Dodávateľ)**")
-                c_name = st.text_input("Cégnév / Név", value=current_settings.get("company_name", ""))
-                c_addr = st.text_input("Székhely / Lakcím", value=current_settings.get("company_address", ""))
+            with admin_tab1:
+                st.subheader("📊 Raktárkészlet kezelése")
+                edited_df = st.data_editor(
+                    products_df,
+                    num_rows="dynamic",
+                    use_container_width=True,
+                    key="admin_data_editor"
+                )
+                if st.button("💾 Módosítások mentése", type="primary", key="save_admin_changes"):
+                    try:
+                        file_path = "Inventory management spreadsheet base.xlsx"
+                        if not os.path.exists(file_path):
+                            file_path = "products.xlsx"
+                        edited_df.to_excel(file_path, index=False)
+                        st.session_state.products_df = edited_df
+                        st.cache_data.clear()
+                        st.success(t["stock_updated"])
+                    except Exception as e:
+                        st.error(f"Hiba a mentés során: {e}")
+    
+            with admin_tab2:
+                st.subheader("📑 Beérkezett megrendelések")
+                orders = load_orders()                                                                                                                                                        
                 
-                col_c1, col_c2 = st.columns(2)
-                with col_c1:
-                    c_ico = st.text_input("IČO", value=current_settings.get("ico", ""))
-                    c_dic = st.text_input("DIČ", value=current_settings.get("dic", ""))
-                with col_c2:
-                    is_dph = st.checkbox("ÁFA fizető? (Platiteľ DPH)", value=current_settings.get("is_dph_payer", False))
-                    c_ic_dph = st.text_input("IČ DPH (ha ÁFA fizető)", value=current_settings.get("ic_dph", ""))
+                if not orders:
+                    st.info("Még nem érkezett megrendelés.")
+                else:
+                    for ord_data in reversed(orders):
+                        with st.expander(f"🧾 {ord_data['id']} - {ord_data['name']} ({ord_data['date']}) - {ord_data['total']:.2f} €"):
+                            st.write(f"**Vevő:** {ord_data['name']} ({ord_data['email']}, {ord_data['phone']})")
+                            st.write(f"**Cím:** {ord_data['address']}, {ord_data['city']} {ord_data['zip']}")
+                            st.write(f"**Fizetés:** {ord_data['payment']}")
+                            
+                            st.write("**Tételek:**")
+                            for item in ord_data['items']:
+                                st.write(f"- {item['name']} (SKU: {item['sku']}) - {item['qty']} ks x {item['subtotal']:.2f} €")
+                            
+                            # PDF Faktúra Letöltése gomb
+                            pdf_buffer = generate_pdf_invoice(ord_data)
+                            st.download_button(
+                                label="📄 Faktúra / Számla letöltése (PDF)",
+                                data=pdf_buffer,
+                                file_name=f"faktura_{ord_data['id']}.pdf",
+                                mime="application/pdf",
+                                key=f"dl_pdf_{ord_data['id']}"
+                            )
+    
+            # ÚJ FÜL A BANKI ADATOK SZERKESZTÉSÉHEZ:
+            with admin_tab3:
+                st.subheader("⚙️ Cég- és Banki adatok (Faktúra beállítások)")
+                current_settings = load_settings()
                 
-                c_reg = st.text_area("Cégbírósági bejegyzés / Nyilvántartás", value=current_settings.get("register_info", ""))
-                
-                st.divider()
-                st.markdown("**Banki adatok**")
-                new_iban = st.text_input("IBAN számlaszám", value=current_settings.get("iban", ""))
-                new_swift = st.text_input("SWIFT / BIC kód", value=current_settings.get("swift", ""))
-                
-                save_settings_btn = st.form_submit_button("💾 Beállítások mentése", type="primary")
-                
-                if save_settings_btn:
-                    updated_settings = {
-                        "company_name": c_name,
-                        "company_address": c_addr,
-                        "ico": c_ico,
-                        "dic": c_dic,
-                        "ic_dph": c_ic_dph,
-                        "is_dph_payer": is_dph,
-                        "register_info": c_reg,
-                        "iban": new_iban,
-                        "swift": new_swift
-                    }
-                    save_settings(updated_settings)
-                    st.success("A cég- és banki adatok sikeresen frissültek!")
-                    st.rerun()
+                with st.form("company_settings_form"):
+                    st.markdown("**Cég adatai (Eladó / Dodávateľ)**")
+                    c_name = st.text_input("Cégnév / Név", value=current_settings.get("company_name", ""))
+                    c_addr = st.text_input("Székhely / Lakcím", value=current_settings.get("company_address", ""))
+                    
+                    col_c1, col_c2 = st.columns(2)
+                    with col_c1:
+                        c_ico = st.text_input("IČO", value=current_settings.get("ico", ""))
+                        c_dic = st.text_input("DIČ", value=current_settings.get("dic", ""))
+                    with col_c2:
+                        is_dph = st.checkbox("ÁFA fizető? (Platiteľ DPH)", value=current_settings.get("is_dph_payer", False))
+                        c_ic_dph = st.text_input("IČ DPH (ha ÁFA fizető)", value=current_settings.get("ic_dph", ""))
+                    
+                    c_reg = st.text_area("Cégbírósági bejegyzés / Nyilvántartás", value=current_settings.get("register_info", ""))
+                    
+                    st.divider()
+                    st.markdown("**Banki adatok**")
+                    new_iban = st.text_input("IBAN számlaszám", value=current_settings.get("iban", ""))
+                    new_swift = st.text_input("SWIFT / BIC kód", value=current_settings.get("swift", ""))
+                    
+                    save_settings_btn = st.form_submit_button("💾 Beállítások mentése", type="primary")
+                    
+                    if save_settings_btn:
+                        updated_settings = {
+                            "company_name": c_name,
+                            "company_address": c_addr,
+                            "ico": c_ico,
+                            "dic": c_dic,
+                            "ic_dph": c_ic_dph,
+                            "is_dph_payer": is_dph,
+                            "register_info": c_reg,
+                            "iban": new_iban,
+                            "swift": new_swift
+                        }
+                        save_settings(updated_settings)
+                        st.success("A cég- és banki adatok sikeresen frissültek!")
+                        st.rerun()
                     
 # --- BEJELENTKEZÉS ÉS PROFIL (OLDALSÁV / SIDEBAR) ---
 with st.sidebar:
