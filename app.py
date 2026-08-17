@@ -6,6 +6,8 @@ import urllib.request
 from io import BytesIO
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 import stripe  # <-- Stripe modul importálása
 
 # Stripe API kulcs betöltése a beállított Secrets-ből
