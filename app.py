@@ -1045,30 +1045,17 @@ elif current_p == "terms":
 elif current_p == "admin":
     st.title(f"⚙️ {t['admin_title']}")
     
-    if not st.session_state.admin_logged_in:
-        pwd = st.text_input(t["enter_password"], type="password", key="admin_pwd_input")
-        if st.button(t["login_btn"], key="admin_login_btn"):
-            if pwd == "admin123":
-                st.session_state.admin_logged_in = True
-                st.rerun()
-            else:
-                st.error("Helytelen jelszó!")
-    else:
-        st.success("Prihlásený ako Admin / Bejelentkezve mint Admin")
-        if st.button(t["logout_btn"], key="admin_logout_btn"):
-            st.session_state.admin_logged_in = False
-            st.rerun()
-            
-        if not st.session_state.user or not st.session_state.admin_logged_in:
+    # Ha nincs bejelentkezve VAGY nem admin az e-mail címe
+    if not st.session_state.user or not st.session_state.admin_logged_in:
         st.warning("⚠️ Ehhez az oldalhoz adminisztrátori bejelentkezés szükséges! Kérjük, jelentkezz be az oldalsávban az admin e-mail címeddel.")
     else:
         st.success(f"🔑 Adminisztrátorként bejelentkezve: {st.session_state.user['email_key']}")
         st.divider()
         admin_tab1, admin_tab2, admin_tab3 = st.tabs(["📦 Raktárkészlet", "📑 Rendelések & Faktúrák", "⚙️ Banki adatok"])
         
-        with admin_tab1:
-            st.subheader("📊 Raktárkészlet kezelése")
-            edited_df = st.data_editor(
+            with admin_tab1:
+                st.subheader("📊 Raktárkészlet kezelése")
+                edited_df = st.data_editor(
                 products_df,
                 num_rows="dynamic",
                 use_container_width=True,
