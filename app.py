@@ -99,7 +99,7 @@ def generate_pdf_invoice(order):
     p.setFont("Helvetica-Bold", 16)
     p.drawString(50, 750, f"FAKTÚRA - DAŇOVÝ DOKLAD č. {order['id']}")
     
-    # Dátumok (Kiállítás, Teljesítés)
+    # Dátumok (Kiállítás, Teljesítés, Esedékesség)
     p.setFont("Helvetica", 9)
     p.drawString(380, 750, f"Dátum vyhotovenia (Kiállítás): {order['date']}")
     p.drawString(380, 738, f"Dátum dodania (Teljesítés): {order['date']}")
@@ -134,7 +134,7 @@ def generate_pdf_invoice(order):
     p.drawString(50, 625, f"Spôsob úhrady (Fizetés): {order['payment']}")
     p.drawString(300, 625, f"IBAN: {settings['iban']}")
     p.drawString(300, 613, f"SWIFT/BIC: {settings['swift']}")
-    p.drawString(300, 601, f"Variabilný symbol: {order['id']}")
+    p.drawString(300, 601, f"Variabilný symbol (Közlemény): {order['id']}")
     
     p.line(50, 590, 550, 590)
     
@@ -163,7 +163,7 @@ def generate_pdf_invoice(order):
         p.drawString(350, y, f"{unit_price:.2f} €")
         
         if settings.get('is_dph_payer'):
-            p.drawString(420, y, "20%")
+            p.drawString(420, y, "20%") # Vagy a beállított ÁFA kulcs
             p.drawString(480, y, f"{item['subtotal']:.2f} €")
         else:
             p.drawString(480, y, f"{item['subtotal']:.2f} €")
@@ -171,19 +171,21 @@ def generate_pdf_invoice(order):
         
     p.line(50, y, 550, y)
     
-    # 5. ÖSSZESÍTÉS ÉS ZÁRADÉK
+    # 5. ÖSSZESÍTÉS ÉS KÖTELEZŐ ZÁRADÉKOK
     y -= 25
     p.setFont("Helvetica-Bold", 11)
     
     if settings.get('is_dph_payer'):
+        # ÁFA bontás ÁFA-fizetőknek
         netto = order['total'] / 1.20
         dph_val = order['total'] - netto
         p.drawString(300, y, f"Základ dane (Adóalap): {netto:.2f} €")
         y -= 15
-        p.drawString(300, y, f"DPH 20%: {dph_val:.2f} €")
+        p.drawString(300, y, f"DPH 20% (ÁFA összege): {dph_val:.2f} €")
         y -= 15
         p.drawString(300, y, f"CELKOM K ÚHRADE: {order['total']:.2f} EUR")
     else:
+        # Nem ÁFA-fizető záradék
         p.drawString(300, y, f"CELKOM K ÚHRADE: {order['total']:.2f} EUR")
         y -= 20
         p.setFont("Helvetica-Oblique", 9)
