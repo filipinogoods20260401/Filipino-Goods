@@ -1044,7 +1044,7 @@ elif current_p == "terms":
 # 7. ADMIN OLDAL
 elif current_p == "admin":
     st.title(f"⚙️ {t['admin_title']}")
-    
+
     # Ha nincs bejelentkezve VAGY nem admin az e-mail címe
     if not st.session_state.user or not st.session_state.admin_logged_in:
         st.warning("⚠️ Ehhez az oldalhoz adminisztrátori bejelentkezés szükséges! Kérjük, jelentkezz be az oldalsávban az admin e-mail címeddel.")
@@ -1053,7 +1053,7 @@ elif current_p == "admin":
         st.divider()
         admin_tab1, admin_tab2, admin_tab3 = st.tabs(["📦 Raktárkészlet", "📑 Rendelések & Faktúrák", "⚙️ Banki adatok"])
 
-            with admin_tab1:
+        with admin_tab1:
                 st.subheader("📊 Raktárkészlet kezelése")
                 edited_df = st.data_editor(
                     products_df,
