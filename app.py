@@ -1073,7 +1073,7 @@ elif current_p == "admin":
                     except Exception as e:
                         st.error(f"Hiba a mentés során: {e}")
     
-            with admin_tab2:
+        with admin_tab2:
                 st.subheader("📑 Beérkezett megrendelések")
                 orders = load_orders()                                                                                                                                                        
                 
