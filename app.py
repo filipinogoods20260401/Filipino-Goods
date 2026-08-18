@@ -1003,9 +1003,21 @@ elif current_p == "categories":
         st.session_state.selected_cat = all_label
 
     # Kategória képek hozzárendelése (ha külön nevet használsz a fájloknál)
-    category_images = {
-        all_label: "images/cat_all.png",
-    }
+    CATEGORY_IMAGES = {
+    "Všetky kategórie": "https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&q=80",
+    "Baking & Dessert Ingredients": "https://images.unsplash.com/photo-1517433670267-08bbd4be890f?w=500&q=80",
+    "Beans & Grains": "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=500&q=80",
+    "Canned Seafood & Meat": "https://images.unsplash.com/photo-1534483509719-3feaee7c30da?w=500&q=80",
+    "Dip": "https://images.unsplash.com/photo-1577906096429-f73c2c312435?w=500&q=80",
+    "Drinks & Energy Drinks": "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=500&q=80",
+    "Instant Noodles & Asian Noodles": "https://images.unsplash.com/photo-1612927601601-6638404737ce?w=500&q=80",
+    "Preserved Fruits & Sweet Fillings": "https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=500&q=80",
+    "Rice & Rice-Based Products": "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=500&q=80",
+    "Sauces, Condiments & Seasonings": "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=500&q=80",
+    "Savory Snacks": "https://images.unsplash.com/photo-1599490659213-e2b9527bd087?w=500&q=80",
+    "Sweet Snacks & Treats": "https://images.unsplash.com/photo-1582293041079-7814c2f12063?w=500&q=80",
+    "Tableware": "https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=500&q=80"
+}
 
     # Kategóriák listája (az "Összes" opcióval az elején)
     cat_list = [all_label] + raw_categories
