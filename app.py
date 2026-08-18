@@ -1087,7 +1087,6 @@ elif current_p == "admin":
         with admin_tab2:
             st.subheader("🛒 Beérkezett rendelések kezelése")
             raw_orders = load_orders()
-            # Kiszűri az esetleges hibás/nem dict típusú elemeket a JSON-ból
             orders = [o for o in raw_orders if isinstance(o, dict)]
             
             if not orders:
@@ -1107,7 +1106,7 @@ elif current_p == "admin":
                     with st.expander(f"📦 {order.get('id', f'ORD-{idx}')} - {c_name} ({order.get('date', '')}) - Status: {status}"):
                         st.write(f"**Vevő:** {c_name} ({c_email}, {c_phone})")
                         st.write(f"**Cím:** {c_addr}, {c_city} {c_zip}")
-                        st.write(f"**Fizetés:** {order.get('payment_method', 'N/A')}")
+                        st.write(f"**Fizetés:** {order.get('payment_method', order.get('payment', 'N/A'))}")
                         
                         st.write("**Tételek:**")
                         items = order.get("items", []) if isinstance(order.get("items"), list) else []
@@ -1153,14 +1152,49 @@ elif current_p == "admin":
                 for idx, order in enumerate(approved_orders):
                     cust = order.get("customer") if isinstance(order.get("customer"), dict) else {}
                     c_name = cust.get("name") or order.get("name", "Névtelen")
+                    tot_price = order.get("total_price", order.get("total", 0))
                     
-                    with st.expander(f"📄 Számla: {order.get('id', f'ORD-{idx}')} - {c_name} ({order.get('total_price', 0)} €)"):
-                        st.write(f"**Dátum:** {order.get('date', '')}")
+                    with st.expander(f"📄 Számla: {order.get('id', f'ORD-{idx}')} - {c_name} ({tot_price:.2f} €)"):
+                        st.write(f"**Kiállítás dátuma:** {order.get('date', '')}")
                         st.write(f"**Vevő:** {c_name}")
-                        st.write(f"**Végösszeg:** {order.get('total_price', 0)} €")
+                        st.write(f"**Végösszeg:** {tot_price:.2f} €")
                         
-                        if st.button("📄 Faktúra / Számla letöltése (PDF)", key=f"inv_btn_{idx}"):
-                            st.info("Számla generálása folyamatban...")
+                        # Előkészítjük a számla formátumot a PDF generáláshoz
+                        invoice_order_data = {
+                            "id": order.get("id", f"ORD-{idx}"),
+                            "date": order.get("date", ""),
+                            "name": c_name,
+                            "address": cust.get("address") or order.get("address", ""),
+                            "city": cust.get("city") or order.get("city", ""),
+                            "zip": cust.get("zip") or order.get("zip", ""),
+                            "email": cust.get("email") or order.get("email", ""),
+                            "phone": cust.get("phone") or order.get("phone", ""),
+                            "payment": order.get("payment_method", order.get("payment", "N/A")),
+                            "total": tot_price,
+                            "items": []
+                        }
+                        
+                        raw_items = order.get("items", [])
+                        for it in raw_items:
+                            qty = it.get("qty", 1)
+                            price = it.get("price", 0)
+                            invoice_order_data["items"].append({
+                                "name": it.get("name", "Termék"),
+                                "qty": qty,
+                                "subtotal": price * qty
+                            })
+                        
+                        try:
+                            pdf_buffer = generate_pdf_invoice(invoice_order_data)
+                            st.download_button(
+                                label="📄 Faktúra / Számla letöltése (PDF)",
+                                data=pdf_buffer,
+                                file_name=f"Faktura_{invoice_order_data['id']}.pdf",
+                                mime="application/pdf",
+                                key=f"dl_inv_btn_{idx}"
+                            )
+                        except Exception as e:
+                            st.error(f"Hiba a PDF számla generálása során: {e}")
 
         # ------------------- 4. BANKI ADATOK FÜL -------------------
         with admin_tab4:
