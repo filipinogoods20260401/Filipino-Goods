@@ -821,6 +821,9 @@ def display_product_grid(df_to_show):
 
     products_list = available_products.reset_index(drop=True)
     eur_huf = get_eur_huf_rate()
+
+# Admin jogosultság ellenőrzése (biztonsági lekéréssel)
+    is_admin = st.session_state.get("admin_logged_in", False)
     
     for i in range(0, len(products_list), 5):
         cols = st.columns(5)
@@ -845,12 +848,17 @@ def display_product_grid(df_to_show):
                     """, 
                     unsafe_allow_html=True
                 )
-                
-                st.caption(f"SKU: `{sku}`")
+
+                if is_admin:
+                    st.caption(f"SKU: `{sku}`")
+                    
                 st.write(f"**{t['price']}:** {p_price:.2f} €")
                 st.caption(f"≈ {p_huf:,.0f} HUF".replace(",", " "))
                 st.caption(f"*(1 EUR = {eur_huf:.2f} HUF)*")
-                st.write(f"**{t['stock']}:** {p_stock} ks")
+
+# --- RAKTÁRKÉSZLET MEGJELENÍTÉSE CSAK ADMINNAK ---
+                if is_admin:
+                    st.write(f"**{t['stock']}:** {p_stock} ks")
                 
                 q_col, b_col = st.columns([1, 2.2])
                 with q_col:
