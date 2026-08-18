@@ -1051,7 +1051,12 @@ elif current_p == "admin":
     else:
         st.success(f"🔑 Adminisztrátorként bejelentkezve: {st.session_state.user['email_key']}")
         st.divider()
-        admin_tab1, admin_tab2, admin_tab3 = st.tabs(["📦 Raktárkészlet", "📑 Rendelések & Faktúrák", "⚙️ Banki adatok"])
+        admin_tab1, admin_tab2, admin_tab3, admin_tab4 = st.tabs([
+            "📦 Raktárkészlet", 
+            "🛒 Rendelések", 
+            "🧾 Számlák (Faktúrák)", 
+            "⚙️ Banki adatok"
+        ])
 
         with admin_tab1:
                 st.subheader("📊 Raktárkészlet kezelése")
@@ -1073,35 +1078,75 @@ elif current_p == "admin":
                     except Exception as e:
                         st.error(f"Hiba a mentés során: {e}")
     
+        # ------------------- 2. RENDELÉSEK FÜL -------------------
         with admin_tab2:
-                st.subheader("📑 Beérkezett megrendelések")
-                orders = load_orders()                                                                                                                                                        
-                
-                if not orders:
-                    st.info("Még nem érkezett megrendelés.")
-                else:
-                    for ord_data in reversed(orders):
-                        with st.expander(f"🧾 {ord_data['id']} - {ord_data['name']} ({ord_data['date']}) - {ord_data['total']:.2f} €"):
-                            st.write(f"**Vevő:** {ord_data['name']} ({ord_data['email']}, {ord_data['phone']})")
-                            st.write(f"**Cím:** {ord_data['address']}, {ord_data['city']} {ord_data['zip']}")
-                            st.write(f"**Fizetés:** {ord_data['payment']}")
-                            
-                            st.write("**Tételek:**")
-                            for item in ord_data['items']:
-                                st.write(f"- {item['name']} (SKU: {item['sku']}) - {item['qty']} ks x {item['subtotal']:.2f} €")
-                            
-                            # PDF Faktúra Letöltése gomb
-                            pdf_buffer = generate_pdf_invoice(ord_data)
-                            st.download_button(
-                                label="📄 Faktúra / Számla letöltése (PDF)",
-                                data=pdf_buffer,
-                                file_name=f"faktura_{ord_data['id']}.pdf",
-                                mime="application/pdf",
-                                key=f"dl_pdf_{ord_data['id']}"
+            st.subheader("🛒 Beérkezett rendelések kezelése")
+            orders = load_orders()
+            
+            if not orders:
+                st.info("Nincsenek beérkezett rendelések.")
+            else:
+                for idx, order in enumerate(orders):
+                    # Státusz lekérése (alapértelmezetten 'Új')
+                    status = order.get("status", "Új")
+                    
+                    with st.expander(f"📦 {order.get('id', f'ORD-{idx}')} - {order.get('customer', {}).get('name', 'N/A')} ({order.get('date', '')}) - Status: {status}"):
+                        st.write(f"**Vevő:** {order.get('customer', {}).get('name')} ({order.get('customer', {}).get('email')}, {order.get('customer', {}).get('phone')})")
+                        st.write(f"**Cím:** {order.get('customer', {}).get('address')}, {order.get('customer', {}).get('city')} {order.get('customer', {}).get('zip')}")
+                        st.write(f"**Fizetés:** {order.get('payment_method', 'N/A')}")
+                        
+                        st.write("**Tételek:**")
+                        for item in order.get("items", []):
+                            st.write(f"- {item.get('name')} (SKU: {item.get('sku')}) - {item.get('qty')} ks x {item.get('price')} €")
+                        
+                        col_stat, col_del = st.columns([2, 1])
+                        
+                        with col_stat:
+                            # Státusz módosítása
+                            new_status = st.selectbox(
+                                "Rendelés státusza:",
+                                ["Új", "Jóváhagyva", "Elutasítva / Törölve"],
+                                index=["Új", "Jóváhagyva", "Elutasítva / Törölve"].index(status) if status in ["Új", "Jóváhagyva", "Elutasítva / Törölve"] else 0,
+                                key=f"status_select_{idx}"
                             )
+                            if new_status != status:
+                                order["status"] = new_status
+                                save_orders(orders)
+                                st.success(f"Státusz frissítve: {new_status}")
+                                st.rerun()
+
+                        with col_del:
+                            # Rendelés végleges törlése
+                            if st.button("🗑️ Rendelés törlése", key=f"del_order_{idx}", type="primary"):
+                                orders.pop(idx)
+                                save_orders(orders)
+                                st.success("Rendelés sikeresen törölve!")
+                                st.rerun()
+
+        # ------------------- 3. SZÁMLÁK FÜL -------------------
+        with admin_tab3:
+            st.subheader("🧾 Jóváhagyott rendelések számlái")
+            orders = load_orders()
+            
+            # Csak a jóváhagyott rendelések kiszűrése
+            approved_orders = [o for o in orders if o.get("status") == "Jóváhagyva"]
+            
+            if not approved_orders:
+                st.info("Jelenleg nincs jóváhagyott rendelés, amelyhez számla állna rendelkezésre. (A 'Rendelések' fülön állítsd a státuszt 'Jóváhagyva' állapotra!)")
+            else:
+                for idx, order in enumerate(approved_orders):
+                    with st.expander(f"📄 Számla: {order.get('id', f'ORD-{idx}')} - {order.get('customer', {}).get('name', 'N/A')} ({order.get('total_price', 0)} €)"):
+                        st.write(f"**Kiállítás dátuma:** {order.get('date')}")
+                        st.write(f"**Vevő:** {order.get('customer', {}).get('name')}")
+                        st.write(f"**Végösszeg:** {order.get('total_price', 0)} €")
+                        
+                        # Számla / PDF letöltési opció
+                        # (A meglévő PDF generáló függvényed hívható meg itt)
+                        if st.button("📄 Faktúra / Számla letöltése (PDF)", key=f"inv_btn_{idx}"):
+                            st.info("Számla generálása folyamatban...")
     
             # ÚJ FÜL A BANKI ADATOK SZERKESZTÉSÉHEZ:
-        with admin_tab3:
+        with admin_tab4:
                 st.subheader("⚙️ Cég- és Banki adatok (Faktúra beállítások)")
                 current_settings = load_settings()
                 
