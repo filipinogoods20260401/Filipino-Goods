@@ -91,6 +91,10 @@ def save_order(order_data):
     orders.append(order_data)
     with open(ORDERS_FILE, "w", encoding="utf-8") as f:
         json.dump(orders, f, ensure_ascii=False, indent=4)
+        
+def save_orders(orders):
+    with open(ORDERS_FILE, "w", encoding="utf-8") as f:
+        json.dump(orders, f, ensure_ascii=False, indent=4)
 
 # --- UNICODE BETŰTÍPUSOK BEÁLLÍTÁSA ---
 def setup_pdf_fonts():
