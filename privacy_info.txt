@@ -1,7 +1,7 @@
 Ochrana osobných údajov a GDPR (Privacy & GDPR Policy)
 
-1. Prevádzkovateľ spracúva osobné údaje v súlade s Nariadením Európskeho parlamentu a Rady (EÚ) 2016/679 (GDPR) a zákonom č. 18/2018 Z. z. o ochrane osobných údajov.
-2. Spracúvané údaje: Meno, priezvisko, adresa doručenia, e-mailový kontakt, telefónne číslo a údaje o objednanom tovare.
-3. Účel spracovania: Vybavenie a doručenie objednávky, vystavenie daňového dokladu (faktúry) a prípadné riešenie reklamácií.
-4. Práva dotknutej osoby: Kupujúci má právo na prístup k svojim údajom, opravu, vymazanie (právo na zabudnutie), obmedzenie spracúvania a právo podať sťažnosť na Úrad na ochranu osobných údajov SR.
-5. Osobné údaje nie sú poskytované tretím stranám s výnimkou doručovateľských služieb a účtovných poradcov v rozsahu nevyhnutnom na plnenie zmluvy.
+Prevádzkovateľ spracúva osobné údaje v súlade s Nariadením Európskeho parlamentu a Rady (EÚ) 2016/679 (GDPR) a zákonom č. 18/2018 Z. z. o ochrane osobných údajov.
+Spracúvané údaje: Meno, priezvisko, adresa doručenia, e-mailový kontakt, telefónne číslo a údaje o objednanom tovare.
+Účel spracovania: Vybavenie a doručenie objednávky, vystavenie daňového dokladu (faktúry) a prípadné riešenie reklamácií.
+Práva dotknutej osoby: Kupujúci má právo na prístup k svojim údajom, opravu, vymazanie (právo na zabudnutie), obmedzenie spracúvania a právo podať sťažnosť na Úrad na ochranu osobných údajov SR.
+Osobné údaje nie sú poskytované tretím stranám s výnimkou doručovateľských služieb a účtovných poradcov v rozsahu nevyhnutnom na plnenie zmluvy.
