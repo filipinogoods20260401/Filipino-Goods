@@ -86,7 +86,7 @@ def load_orders():
             return json.load(f)
     return []
 
-def save_order(order_data):
+def save_orders(order_data):
     orders = load_orders()
     orders.append(order_data)
     with open(ORDERS_FILE, "w", encoding="utf-8") as f:
