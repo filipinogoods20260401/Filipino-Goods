@@ -1062,135 +1062,148 @@ elif current_p == "admin":
             "⚙️ Banki adatok"
         ])
 
+        # ------------------- 1. RAKTÁRKÉSZLET FÜL -------------------
         with admin_tab1:
-                st.subheader("📊 Raktárkészlet kezelése")
-                edited_df = st.data_editor(
-                    products_df,
-                    num_rows="dynamic",
-                    use_container_width=True,
-                    key="admin_data_editor"
-                )
-                if st.button("💾 Módosítások mentése", type="primary", key="save_admin_changes"):
-                    try:
-                        file_path = "Inventory management spreadsheet base.xlsx"
-                        if not os.path.exists(file_path):
-                            file_path = "products.xlsx"
-                        edited_df.to_excel(file_path, index=False)
-                        st.session_state.products_df = edited_df
-                        st.cache_data.clear()
-                        st.success(t["stock_updated"])
-                    except Exception as e:
-                        st.error(f"Hiba a mentés során: {e}")
-    
+            st.subheader("📊 Raktárkészlet kezelése")
+            edited_df = st.data_editor(
+                products_df,
+                num_rows="dynamic",
+                use_container_width=True,
+                key="admin_data_editor"
+            )
+            if st.button("💾 Módosítások mentése", type="primary", key="save_admin_changes"):
+                try:
+                    file_path = "Inventory management spreadsheet base.xlsx"
+                    if not os.path.exists(file_path):
+                        file_path = "products.xlsx"
+                    edited_df.to_excel(file_path, index=False)
+                    st.session_state.products_df = edited_df
+                    st.cache_data.clear()
+                    st.success(t["stock_updated"])
+                except Exception as e:
+                    st.error(f"Hiba a mentés során: {e}")
+
         # ------------------- 2. RENDELÉSEK FÜL -------------------
         with admin_tab2:
             st.subheader("🛒 Beérkezett rendelések kezelése")
-            orders = load_orders()
+            raw_orders = load_orders()
+            # Kiszűri az esetleges hibás/nem dict típusú elemeket a JSON-ból
+            orders = [o for o in raw_orders if isinstance(o, dict)]
             
             if not orders:
                 st.info("Nincsenek beérkezett rendelések.")
             else:
                 for idx, order in enumerate(orders):
-                    # Státusz lekérése (alapértelmezetten 'Új')
                     status = order.get("status", "Új")
+                    cust = order.get("customer") if isinstance(order.get("customer"), dict) else {}
                     
-                    with st.expander(f"📦 {order.get('id', f'ORD-{idx}')} - {order.get('customer', {}).get('name', 'N/A')} ({order.get('date', '')}) - Status: {status}"):
-                        st.write(f"**Vevő:** {order.get('customer', {}).get('name')} ({order.get('customer', {}).get('email')}, {order.get('customer', {}).get('phone')})")
-                        st.write(f"**Cím:** {order.get('customer', {}).get('address')}, {order.get('customer', {}).get('city')} {order.get('customer', {}).get('zip')}")
+                    c_name = cust.get("name") or order.get("name", "Névtelen")
+                    c_email = cust.get("email") or order.get("email", "N/A")
+                    c_phone = cust.get("phone") or order.get("phone", "N/A")
+                    c_addr = cust.get("address") or order.get("address", "")
+                    c_city = cust.get("city") or order.get("city", "")
+                    c_zip = cust.get("zip") or order.get("zip", "")
+
+                    with st.expander(f"📦 {order.get('id', f'ORD-{idx}')} - {c_name} ({order.get('date', '')}) - Status: {status}"):
+                        st.write(f"**Vevő:** {c_name} ({c_email}, {c_phone})")
+                        st.write(f"**Cím:** {c_addr}, {c_city} {c_zip}")
                         st.write(f"**Fizetés:** {order.get('payment_method', 'N/A')}")
                         
                         st.write("**Tételek:**")
-                        for item in order.get("items", []):
-                            st.write(f"- {item.get('name')} (SKU: {item.get('sku')}) - {item.get('qty')} ks x {item.get('price')} €")
+                        items = order.get("items", []) if isinstance(order.get("items"), list) else []
+                        for item in items:
+                            if isinstance(item, dict):
+                                st.write(f"- {item.get('name', 'Termék')} (SKU: {item.get('sku', 'N/A')}) - {item.get('qty', 1)} ks x {item.get('price', 0)} €")
                         
                         col_stat, col_del = st.columns([2, 1])
                         
                         with col_stat:
-                            # Státusz módosítása
+                            opts = ["Új", "Jóváhagyva", "Elutasítva / Törölve"]
+                            stat_idx = opts.index(status) if status in opts else 0
                             new_status = st.selectbox(
                                 "Rendelés státusza:",
-                                ["Új", "Jóváhagyva", "Elutasítva / Törölve"],
-                                index=["Új", "Jóváhagyva", "Elutasítva / Törölve"].index(status) if status in ["Új", "Jóváhagyva", "Elutasítva / Törölve"] else 0,
+                                opts,
+                                index=stat_idx,
                                 key=f"status_select_{idx}"
                             )
                             if new_status != status:
-                                order["status"] = new_status
-                                save_order(orders)
+                                orders[idx]["status"] = new_status
+                                save_orders(orders)
                                 st.success(f"Státusz frissítve: {new_status}")
                                 st.rerun()
 
                         with col_del:
-                            # Rendelés végleges törlése
                             if st.button("🗑️ Rendelés törlése", key=f"del_order_{idx}", type="primary"):
                                 orders.pop(idx)
-                                save_order(orders)
+                                save_orders(orders)
                                 st.success("Rendelés sikeresen törölve!")
                                 st.rerun()
 
         # ------------------- 3. SZÁMLÁK FÜL -------------------
         with admin_tab3:
             st.subheader("🧾 Jóváhagyott rendelések számlái")
-            orders = load_orders()
+            raw_orders = load_orders()
+            orders = [o for o in raw_orders if isinstance(o, dict)]
             
-            # Csak a jóváhagyott rendelések kiszűrése
             approved_orders = [o for o in orders if o.get("status") == "Jóváhagyva"]
             
             if not approved_orders:
-                st.info("Jelenleg nincs jóváhagyott rendelés, amelyhez számla állna rendelkezésre. (A 'Rendelések' fülön állítsd a státuszt 'Jóváhagyva' állapotra!)")
+                st.info("Jelenleg nincs jóváhagyott rendelés. (A 'Rendelések' fülön állítsd a státuszt 'Jóváhagyva' állapotra!)")
             else:
                 for idx, order in enumerate(approved_orders):
-                    with st.expander(f"📄 Számla: {order.get('id', f'ORD-{idx}')} - {order.get('customer', {}).get('name', 'N/A')} ({order.get('total_price', 0)} €)"):
-                        st.write(f"**Kiállítás dátuma:** {order.get('date')}")
-                        st.write(f"**Vevő:** {order.get('customer', {}).get('name')}")
+                    cust = order.get("customer") if isinstance(order.get("customer"), dict) else {}
+                    c_name = cust.get("name") or order.get("name", "Névtelen")
+                    
+                    with st.expander(f"📄 Számla: {order.get('id', f'ORD-{idx}')} - {c_name} ({order.get('total_price', 0)} €)"):
+                        st.write(f"**Dátum:** {order.get('date', '')}")
+                        st.write(f"**Vevő:** {c_name}")
                         st.write(f"**Végösszeg:** {order.get('total_price', 0)} €")
                         
-                        # Számla / PDF letöltési opció
-                        # (A meglévő PDF generáló függvényed hívható meg itt)
                         if st.button("📄 Faktúra / Számla letöltése (PDF)", key=f"inv_btn_{idx}"):
                             st.info("Számla generálása folyamatban...")
-    
-            # ÚJ FÜL A BANKI ADATOK SZERKESZTÉSÉHEZ:
+
+        # ------------------- 4. BANKI ADATOK FÜL -------------------
         with admin_tab4:
-                st.subheader("⚙️ Cég- és Banki adatok (Faktúra beállítások)")
-                current_settings = load_settings()
+            st.subheader("⚙️ Cég- és Banki adatok (Faktúra beállítások)")
+            current_settings = load_settings()
+            
+            with st.form("company_settings_form"):
+                st.markdown("**Cég adatai (Eladó / Dodávateľ)**")
+                c_name = st.text_input("Cégnév / Név", value=current_settings.get("company_name", ""))
+                c_addr = st.text_input("Székhely / Lakcím", value=current_settings.get("company_address", ""))
                 
-                with st.form("company_settings_form"):
-                    st.markdown("**Cég adatai (Eladó / Dodávateľ)**")
-                    c_name = st.text_input("Cégnév / Név", value=current_settings.get("company_name", ""))
-                    c_addr = st.text_input("Székhely / Lakcím", value=current_settings.get("company_address", ""))
-                    
-                    col_c1, col_c2 = st.columns(2)
-                    with col_c1:
-                        c_ico = st.text_input("IČO", value=current_settings.get("ico", ""))
-                        c_dic = st.text_input("DIČ", value=current_settings.get("dic", ""))
-                    with col_c2:
-                        is_dph = st.checkbox("ÁFA fizető? (Platiteľ DPH)", value=current_settings.get("is_dph_payer", False))
-                        c_ic_dph = st.text_input("IČ DPH (ha ÁFA fizető)", value=current_settings.get("ic_dph", ""))
-                    
-                    c_reg = st.text_area("Cégbírósági bejegyzés / Nyilvántartás", value=current_settings.get("register_info", ""))
-                    
-                    st.divider()
-                    st.markdown("**Banki adatok**")
-                    new_iban = st.text_input("IBAN számlaszám", value=current_settings.get("iban", ""))
-                    new_swift = st.text_input("SWIFT / BIC kód", value=current_settings.get("swift", ""))
-                    
-                    save_settings_btn = st.form_submit_button("💾 Beállítások mentése", type="primary")
-                    
-                    if save_settings_btn:
-                        updated_settings = {
-                            "company_name": c_name,
-                            "company_address": c_addr,
-                            "ico": c_ico,
-                            "dic": c_dic,
-                            "ic_dph": c_ic_dph,
-                            "is_dph_payer": is_dph,
-                            "register_info": c_reg,
-                            "iban": new_iban,
-                            "swift": new_swift
-                        }
-                        save_settings(updated_settings)
-                        st.success("A cég- és banki adatok sikeresen frissültek!")
-                        st.rerun()
+                col_c1, col_c2 = st.columns(2)
+                with col_c1:
+                    c_ico = st.text_input("IČO", value=current_settings.get("ico", ""))
+                    c_dic = st.text_input("DIČ", value=current_settings.get("dic", ""))
+                with col_c2:
+                    is_dph = st.checkbox("ÁFA fizető? (Platiteľ DPH)", value=current_settings.get("is_dph_payer", False))
+                    c_ic_dph = st.text_input("IČ DPH (ha ÁFA fizető)", value=current_settings.get("ic_dph", ""))
+                
+                c_reg = st.text_area("Cégbírósági bejegyzés / Nyilvántartás", value=current_settings.get("register_info", ""))
+                
+                st.divider()
+                st.markdown("**Banki adatok**")
+                new_iban = st.text_input("IBAN számlaszám", value=current_settings.get("iban", ""))
+                new_swift = st.text_input("SWIFT / BIC kód", value=current_settings.get("swift", ""))
+                
+                save_settings_btn = st.form_submit_button("💾 Beállítások mentése", type="primary")
+                
+                if save_settings_btn:
+                    updated_settings = {
+                        "company_name": c_name,
+                        "company_address": c_addr,
+                        "ico": c_ico,
+                        "dic": c_dic,
+                        "ic_dph": c_ic_dph,
+                        "is_dph_payer": is_dph,
+                        "register_info": c_reg,
+                        "iban": new_iban,
+                        "swift": new_swift
+                    }
+                    save_settings(updated_settings)
+                    st.success("A cég- és banki adatok sikeresen frissültek!")
+                    st.rerun()
                     
 # --- BEJELENTKEZÉS ÉS PROFIL (OLDALSÁV / SIDEBAR) ---
 with st.sidebar:
