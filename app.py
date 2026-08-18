@@ -53,6 +53,13 @@ st.markdown("""
 ORDERS_FILE = "orders.json"
 SETTINGS_FILE = "settings.json"
 
+# Segédfüggvény a fájlok biztonságos beolvasásához
+def load_text_file(file_path, default_text=""):
+    if os.path.exists(file_path):
+        with open(file_path, "r", encoding="utf-8") as f:
+            return f.read()
+    return default_text
+
 # --- BANKI ÉS CÉGADATOK KEZELÉSE ---
 def load_settings():
     default_settings = {
@@ -1044,14 +1051,24 @@ elif current_p == "about":
 
 # 6. SZABÁLYZATOK OLDAL
 elif current_p == "terms":
-    st.title(f"📜 {t.get('policies_title', 'Szabályzatok')}")
-    tab1, tab2, tab3 = st.tabs([t["tab_shipping"], t["tab_payment"], t["tab_privacy"]])
-    with tab1:
-        st.markdown(t["shipping_text"])
-    with tab2:
-        st.markdown(t["payment_text"])
-    with tab3:
-        st.markdown(t["privacy_text"])
+    st.title(f"📜 {t.get('terms_title', 'Terms & Policies')}")
+
+    # Szövegek betöltése a .txt fájlokból
+    delivery_text = load_text_file("delivery_info.txt", "Doručovacie podmienky nenájdené.")
+    payment_text = load_text_file("payment_info.txt", "Platobné podmienky nenájdené.")
+    privacy_text = load_text_file("privacy_info.txt", "Podmienky GDPR nenájdené.")
+
+    # Fülek létrehozása
+    tab_del, tab_pay, tab_priv = st.tabs(["Delivery", "Payment", "Privacy & GDPR"])
+
+    with tab_del:
+        st.markdown(delivery_text)
+
+    with tab_pay:
+        st.markdown(payment_text)
+
+    with tab_priv:
+        st.markdown(privacy_text)
 
 # 7. ADMIN OLDAL
 elif current_p == "admin":
