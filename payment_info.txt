@@ -1,0 +1,5 @@
+Platobné podmienky (Payment Policy)
+
+• Bankový prevod (Advance Payment): Platba vopred na základe vygenerovanej proforma faktúry / údajov k platbe. Tovar odosielame po pripísaní platby na náš účet.
+• Dobierka (Cash on Delivery): Platba v hotovosti alebo kartou pri prevzatí zásielky od kuriéra (+1,50 € príplatok za dobierku).
+• Všetky ceny sú uvádzané s DPH (ak je predávajúci platcom DPH) a sú konečné vrátane všetkých zákonných poplatkov.
