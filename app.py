@@ -86,7 +86,7 @@ def load_orders():
             return json.load(f)
     return []
 
-def save_orders(order_data):
+def save_order(order_data):
     orders = load_orders()
     orders.append(order_data)
     with open(ORDERS_FILE, "w", encoding="utf-8") as f:
@@ -1111,7 +1111,7 @@ elif current_p == "admin":
                             )
                             if new_status != status:
                                 order["status"] = new_status
-                                save_orders(orders)
+                                save_order(orders)
                                 st.success(f"Státusz frissítve: {new_status}")
                                 st.rerun()
 
@@ -1119,7 +1119,7 @@ elif current_p == "admin":
                             # Rendelés végleges törlése
                             if st.button("🗑️ Rendelés törlése", key=f"del_order_{idx}", type="primary"):
                                 orders.pop(idx)
-                                save_orders(orders)
+                                save_order(orders)
                                 st.success("Rendelés sikeresen törölve!")
                                 st.rerun()
 
